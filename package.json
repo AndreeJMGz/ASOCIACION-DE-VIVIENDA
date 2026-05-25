@@ -1,0 +1,13 @@
+{
+  "name": "santa-luzmila",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema administrativo para la Asociacion Santa Luzmila con Node y SQLite.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asociacion Santa Luzmila - Panel Administrativo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <section id="auth-view" class="auth-shell">
+      <div class="auth-card">
+        <p class="eyebrow">Acceso restringido</p>
+        <h1>Asociacion Santa Luzmila</h1>
+        <p class="hero-copy">
+          Ingreso para la junta administrativa y para el super admin.
+          El sistema esta pensado para ser simple, claro y facil de usar.
+        </p>
+
+        <form id="login-form" class="form-stack auth-form">
+          <label>
+            <span>Usuario de la directiva</span>
+            <input id="login-username" name="username" type="text" autocomplete="username" required>
+          </label>
+          <label>
+            <span>Contrasena</span>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <div id="login-message" class="form-message hidden" role="status"></div>
+          <button class="primary-button" type="submit">Ingresar</button>
+        </form>
+
+        <div class="auth-divider">
+          <span>o</span>
+        </div>
+
+        <div class="form-actions auth-actions">
+          <button id="open-portal-button" class="secondary-button full-button" type="button">Entrar al portal de consulta</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="portal-view" class="hidden">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Portal de consulta</p>
+          <h1>Santa Luzmila - Transparencia y estado de cuenta</h1>
+          <p class="hero-copy">
+            Este portal es de solo lectura. Sirve para revisar actividades comunales, avances generales y el estado de cuenta de cada lote sin modificar informacion.
+          </p>
+        </div>
+        <div class="hero-badge user-badge">
+          <span>Modo</span>
+          <strong>Solo lectura</strong>
+          <p class="badge-copy">Transparencia general y consulta privada por documento y lotes.</p>
+          <button id="portal-back-button" class="ghost-button full-button" type="button">Volver</button>
+        </div>
+      </header>
+
+      <section class="panel notice-panel">
+        <strong>Privacidad:</strong> la transparencia general muestra resumenes y avances.
+        El detalle privado aparece al consultar por documento, y puedes usar manzana o lote como filtros opcionales.
+      </section>
+
+      <section class="panel saved-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Transparencia general</h2>
+            <p>Consulta actividades comunales, metas, recaudacion, egresos y actividad reciente de la asociacion.</p>
+          </div>
+        </div>
+
+        <div id="portal-overview" class="superadmin-overview"></div>
+
+        <div class="module-grid">
+          <section class="panel inner-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Actividades comunales</h3>
+                <p class="section-copy">Filtra por nombre o estado para revisar metas, faltantes y avance general.</p>
+              </div>
+            </div>
+
+            <div class="grid two-columns">
+              <label>
+                <span>Buscar actividad</span>
+                <input id="portal-activity-search" type="text" placeholder="Ej. limpieza, maquinaria, mayo">
+              </label>
+              <label>
+                <span>Estado</span>
+                <select id="portal-activity-status-filter">
+                  <option value="todos">Todos</option>
+                  <option value="abierta">Abierta</option>
+                  <option value="en_curso">En curso</option>
+                  <option value="cerrada">Cerrada</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="portal-activities-empty" class="empty-state">
+              Aun no hay actividades comunales registradas.
+            </div>
+            <div id="portal-activities-list" class="records-list"></div>
+          </section>
+
+          <section class="panel inner-panel">
+            <h3>Actividad reciente</h3>
+            <p class="section-copy">Resumen general de movimientos y gestiones relevantes del sistema.</p>
+            <div id="portal-recent-activity" class="records-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel saved-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Mi estado de cuenta</h2>
+            <p>Consulta privada por documento. Si una persona tiene varios lotes, el portal los muestra juntos en una sola consulta.</p>
+          </div>
+        </div>
+
+        <div class="account-layout">
+          <form id="portal-lookup-form" class="panel inner-panel form-stack">
+            <div>
+              <h3>Consultar mis lotes</h3>
+              <p class="section-copy">Escribe el documento del titular. Si quieres, usa manzana y lote solo para afinar la busqueda.</p>
+            </div>
+
+            <div class="grid two-columns">
+              <label class="full-width">
+                <span>Numero de documento</span>
+                <input id="portal-document" type="text" required>
+              </label>
+              <label>
+                <span>Manzana (opcional)</span>
+                <select id="portal-manzana"></select>
+              </label>
+              <label>
+                <span>Lote (opcional)</span>
+                <select id="portal-lote" disabled></select>
+              </label>
+            </div>
+
+            <div id="portal-lookup-message" class="form-message hidden" role="status"></div>
+
+            <div class="form-actions compact-actions">
+              <button id="portal-clear-button" class="ghost-button" type="button">Limpiar</button>
+              <button class="primary-button" type="submit">Consultar mis lotes</button>
+            </div>
+          </form>
+
+          <section class="panel inner-panel">
+            <h3>Resultado de la consulta</h3>
+            <div id="portal-account-result" class="records-list">
+              <div class="empty-state">Completa al menos el documento para revisar los lotes asociados.</div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+
+    <div id="app-view" class="hidden">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Panel administrativo</p>
+          <h1>Asociacion Santa Luzmila</h1>
+          <p class="hero-copy">
+            Registro de socios, actividades comunales y cuentas administrativas en una sola pantalla,
+            con pasos simples para que cualquier directivo lo pueda usar.
+          </p>
+        </div>
+        <div class="hero-badge user-badge">
+          <span>Sesion activa</span>
+          <strong id="current-user-name">-</strong>
+          <p id="current-user-role" class="badge-copy">-</p>
+          <button id="logout-button" class="ghost-button full-button" type="button">Cerrar sesion</button>
+        </div>
+      </header>
+
+      <section class="panel notice-panel">
+        <strong>Acceso restringido:</strong> solo directivos y super admin pueden ingresar.
+        El super admin puede crear, editar, eliminar y cambiar contrasenas de las cuentas directivas.
+      </section>
+
+      <section class="panel tabs-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Menu principal</h2>
+            <p>Elige una pestaña segun la tarea que vas a realizar.</p>
+          </div>
+        </div>
+        <div class="tabs-nav" role="tablist" aria-label="Secciones principales">
+          <button id="tab-button-registro" class="tab-button active" type="button" data-tab="registro" aria-selected="true">Registro</button>
+          <button id="tab-button-finanzas" class="tab-button" type="button" data-tab="finanzas" aria-selected="false">Actividades y aportes</button>
+          <button id="tab-button-tesoreria" class="tab-button" type="button" data-tab="tesoreria" aria-selected="false">Tesoreria</button>
+          <button id="tab-button-incidencias" class="tab-button" type="button" data-tab="incidencias" aria-selected="false">Incidencias</button>
+          <button id="tab-button-asambleas" class="tab-button" type="button" data-tab="asambleas" aria-selected="false">Asambleas</button>
+          <button id="tab-button-reportes" class="tab-button" type="button" data-tab="reportes" aria-selected="false">Reportes</button>
+          <button id="tab-button-usuarios" class="tab-button" type="button" data-tab="usuarios" aria-selected="false">Usuarios</button>
+          <button id="tab-button-superadmin" class="tab-button hidden" type="button" data-tab="superadmin" aria-selected="false">Super Admin</button>
+        </div>
+      </section>
+
+      <section id="tab-panel-registro" class="tab-panel">
+        <main class="layout">
+          <section id="socios-section" class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Ficha del socio</h2>
+              <p>Empieza aqui para registrar a la persona responsable del lote.</p>
+            </div>
+            <button id="reset-button" class="ghost-button" type="button">Limpiar formulario</button>
+          </div>
+
+          <form id="socio-form" class="form-stack">
+            <section class="form-section">
+              <h3>1. Ubicacion del predio</h3>
+              <p class="section-copy">Primero elige la manzana y luego el lote.</p>
+              <div class="grid two-columns">
+                <label>
+                  <span>Manzana</span>
+                  <select id="manzana" name="manzana" required></select>
+                </label>
+                <label>
+                  <span>Lote</span>
+                  <select id="lote" name="lote" required disabled></select>
+                </label>
+              </div>
+
+              <div id="lot-meta" class="lot-meta empty">
+                Selecciona una manzana y un lote para ver el detalle.
+              </div>
+            </section>
+
+            <section class="form-section">
+              <h3>2. Datos del socio principal</h3>
+              <p class="section-copy">Aqui va la persona responsable del lote.</p>
+              <div class="grid two-columns">
+                <label>
+                  <span>Nombres</span>
+                  <input id="nombres" name="nombres" type="text" required>
+                </label>
+                <label>
+                  <span>Apellidos</span>
+                  <input id="apellidos" name="apellidos" type="text" required>
+                </label>
+                <label>
+                  <span>Tipo de documento</span>
+                  <select id="tipo-documento" name="tipoDocumento" required>
+                    <option value="DNI">DNI</option>
+                    <option value="CE">CE</option>
+                    <option value="Pasaporte">Pasaporte</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Numero de documento</span>
+                  <input id="numero-documento" name="numeroDocumento" type="text" required>
+                </label>
+                <label>
+                  <span>Fecha de nacimiento</span>
+                  <input id="fecha-nacimiento" name="fechaNacimiento" type="date">
+                </label>
+                <label>
+                  <span>Estado del socio</span>
+                  <select id="estado-socio" name="estadoSocio">
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                    <option value="suspendido">Suspendido</option>
+                    <option value="retirado">Retirado</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-title-row">
+                <div>
+                  <h3>3. Otras personas vinculadas al lote</h3>
+                  <p class="section-copy">Agrega cotitulares solo si realmente existen.</p>
+                </div>
+                <button id="add-cotitular" class="secondary-button" type="button">Agregar cotitular</button>
+              </div>
+              <div id="cotitulares-list" class="stack-sm"></div>
+            </section>
+
+            <section class="form-section">
+              <h3>4. Telefonos y contacto</h3>
+              <p class="section-copy">Usa al menos un celular principal para ubicar al socio.</p>
+              <div class="grid two-columns">
+                <label>
+                  <span>Celular principal</span>
+                  <input id="celular-principal" name="celularPrincipal" type="tel" required>
+                </label>
+                <label>
+                  <span>Celular alterno</span>
+                  <input id="celular-alterno" name="celularAlterno" type="tel">
+                </label>
+                <label>
+                  <span>Correo principal</span>
+                  <input id="correo-principal" name="correoPrincipal" type="email">
+                </label>
+                <label>
+                  <span>Correo alterno</span>
+                  <input id="correo-alterno" name="correoAlterno" type="email">
+                </label>
+                <label class="full-width">
+                  <span>Direccion de contacto</span>
+                  <input id="direccion-contacto" name="direccionContacto" type="text">
+                </label>
+                <label>
+                  <span>Contacto de emergencia</span>
+                  <input id="contacto-emergencia" name="contactoEmergencia" type="text">
+                </label>
+                <label>
+                  <span>Telefono de emergencia</span>
+                  <input id="telefono-emergencia" name="telefonoEmergencia" type="tel">
+                </label>
+              </div>
+            </section>
+
+            <section class="form-section">
+              <h3>5. Observaciones</h3>
+              <p class="section-copy">Anota cualquier dato importante que la directiva deba recordar.</p>
+              <label>
+                <span>Observaciones administrativas</span>
+                <textarea id="observaciones" name="observaciones" rows="4"></textarea>
+              </label>
+            </section>
+
+            <div id="form-message" class="form-message hidden" role="status"></div>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Guardar ficha del socio</button>
+            </div>
+          </form>
+          </section>
+
+          <aside class="sidebar">
+            <section class="panel sticky-panel">
+              <h2>Resumen rapido</h2>
+              <div id="summary" class="summary">
+                <p>Completa el formulario para ver un resumen simple antes de guardar.</p>
+              </div>
+            </section>
+          </aside>
+        </main>
+
+        <section class="panel saved-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Socios registrados</h2>
+              <p>Aqui veras rapidamente quienes ya fueron registrados y si tienen pendientes en actividades comunales.</p>
+            </div>
+            <button id="clear-storage" class="ghost-button" type="button">Borrar socios de prueba</button>
+          </div>
+          <div id="records-empty" class="empty-state">
+            Aun no hay socios guardados en este prototipo.
+          </div>
+          <div id="records-list" class="records-list"></div>
+        </section>
+      </section>
+
+      <section id="tab-panel-finanzas" class="tab-panel hidden">
+        <section id="finanzas-section" class="panel saved-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Actividades y aportes</h2>
+            <p>Crea una actividad comunal, define una meta y controla por lote quien aporto, quien ayudo fisicamente y que decidio la junta.</p>
+          </div>
+        </div>
+
+        <div class="finance-layout">
+          <aside class="panel inner-panel finance-sidebar">
+            <div class="panel-header">
+              <div>
+                <h3>Buscar actividad</h3>
+                <p>Escribe el nombre, motivo o fecha de la actividad.</p>
+              </div>
+            </div>
+            <label>
+              <span>Busqueda</span>
+              <input id="finance-search" type="text" placeholder="Ej. limpieza, maquinaria, mayo">
+            </label>
+            <div id="finance-records-empty" class="empty-state">
+              Aun no hay actividades comunales registradas.
+            </div>
+            <div id="finance-records-list" class="records-list compact-records"></div>
+          </aside>
+
+          <div class="finance-content">
+            <section class="panel inner-panel">
+              <h3>Actividad seleccionada</h3>
+              <div id="finance-selected-card" class="summary">
+                <p>Selecciona una actividad desde la lista de la izquierda.</p>
+              </div>
+            </section>
+
+            <section class="panel inner-panel">
+              <div id="finance-dashboard" class="finance-dashboard"></div>
+            </section>
+
+            <div class="finance-grid">
+              <form id="activity-form" class="panel inner-panel form-stack">
+                <div>
+                  <h3 id="activity-form-title">Nueva actividad comunal</h3>
+                  <p class="section-copy">Ejemplo: limpieza de calles, alquiler de maquinaria, guardiania o mantenimiento puntual.</p>
+                </div>
+
+                <div class="grid two-columns">
+                  <label class="full-width">
+                    <span>Nombre de la actividad</span>
+                    <input id="activity-title" type="text" placeholder="Ej. Limpieza de calles con maquinaria" required>
+                  </label>
+                  <label class="full-width">
+                    <span>Motivo o detalle</span>
+                    <textarea id="activity-description" rows="4" placeholder="Explica por que se hizo, que se necesita y cualquier acuerdo base."></textarea>
+                  </label>
+                  <label>
+                    <span>Fecha</span>
+                    <input id="activity-date" type="date" required>
+                  </label>
+                  <label>
+                    <span>Meta total (S/.)</span>
+                    <input id="activity-target" type="number" min="0" step="0.01" required>
+                  </label>
+                  <label>
+                    <span>Aporte sugerido por lote (S/.)</span>
+                    <input id="activity-suggested" type="number" min="0" step="0.01" readonly>
+                    <small id="activity-suggested-help" class="field-help">Se calcula automaticamente segun la meta y los lotes activos.</small>
+                  </label>
+                  <label>
+                    <span>Estado</span>
+                    <select id="activity-status">
+                      <option value="abierta">Abierta</option>
+                      <option value="en_curso">En curso</option>
+                      <option value="cerrada">Cerrada</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div id="activity-message" class="form-message hidden" role="status"></div>
+
+                <div class="form-actions compact-actions">
+                  <button id="activity-cancel" class="ghost-button" type="button">Limpiar</button>
+                  <button class="primary-button" type="submit">Guardar actividad</button>
+                </div>
+              </form>
+
+              <form id="movement-form" class="panel inner-panel form-stack">
+                <div>
+                  <h3 id="movement-form-title">Registrar movimiento</h3>
+                  <p class="section-copy">Marca si el lote aporto dinero, ayudo fisicamente, quedo como sin respuesta o si la junta aprobo compensacion, exoneracion o devolucion.</p>
+                </div>
+
+                <div class="grid two-columns">
+                  <label class="full-width">
+                    <span>Lote / responsable</span>
+                    <select id="movement-lot" required></select>
+                  </label>
+                  <label>
+                    <span>Tipo de movimiento</span>
+                    <select id="movement-type" required>
+                      <option value="aporte_dinero">Aporto dinero</option>
+                      <option value="devolucion">Devolucion de aporte</option>
+                      <option value="apoyo_fisico">Ayudo fisicamente</option>
+                      <option value="compensacion_aprobada">La junta aprobo compensacion</option>
+                      <option value="exoneracion">Exonerado por junta</option>
+                      <option value="sin_respuesta">Sin respuesta</option>
+                      <option value="observacion">Observacion</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Monto reconocido (S/.)</span>
+                    <input id="movement-amount" type="number" min="0" step="0.01">
+                  </label>
+                  <label>
+                    <span>Fecha del movimiento</span>
+                    <input id="movement-date" type="date" required>
+                  </label>
+                  <label>
+                    <span>Medio o respaldo</span>
+                    <select id="movement-method">
+                      <option value="efectivo">Efectivo</option>
+                      <option value="transferencia">Transferencia</option>
+                      <option value="deposito">Deposito</option>
+                      <option value="yape_plin">Yape / Plin</option>
+                      <option value="acuerdo_junta">Acuerdo de junta</option>
+                      <option value="visita_verificada">Visita verificada</option>
+                      <option value="mensaje">Mensaje</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </label>
+                  <label class="full-width">
+                    <span>Detalle o decision tomada</span>
+                    <textarea id="movement-detail" rows="4" placeholder="Ej. apoyo en limpieza el sabado, acuerdo verbal, aporte recibido por Yape, exonerado por enfermedad, etc."></textarea>
+                  </label>
+                </div>
+
+                <div id="movement-message" class="form-message hidden" role="status"></div>
+
+                <div class="form-actions">
+                  <button id="movement-cancel" class="ghost-button" type="button">Limpiar</button>
+                  <button id="movement-submit" class="primary-button" type="submit">Guardar movimiento</button>
+                </div>
+              </form>
+            </div>
+
+            <section class="panel inner-panel">
+              <div class="panel-header">
+                <div>
+                  <h3>Control por lotes</h3>
+                  <p>Revisa por lote quien aporto, quien ayudo y quien sigue pendiente.</p>
+                </div>
+                <label class="compact-filter">
+                  <span>Filtro</span>
+                  <select id="activity-lot-filter">
+                    <option value="todos">Todos</option>
+                    <option value="aportaron">Aportaron</option>
+                    <option value="pendientes">Pendientes</option>
+                    <option value="apoyo_fisico">Ayuda fisica</option>
+                    <option value="compensados">Compensados / exonerados</option>
+                    <option value="sin_respuesta">Sin respuesta</option>
+                  </select>
+                </label>
+              </div>
+              <div id="charges-empty" class="empty-state">
+                Selecciona una actividad para ver sus lotes participantes.
+              </div>
+              <div id="charges-list" class="records-list"></div>
+            </section>
+          </div>
+        </div>
+        </section>
+      </section>
+
+      <section id="tab-panel-tesoreria" class="tab-panel hidden">
+        <section class="panel saved-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Tesoreria, gastos y proveedores</h2>
+              <p>Registra egresos, controla caja y banco, y manten ordenados tus proveedores.</p>
+            </div>
+          </div>
+
+          <div id="treasury-dashboard" class="finance-dashboard"></div>
+
+          <div class="module-grid">
+            <form id="provider-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Nuevo proveedor</h3>
+                <p class="section-copy">Guarda aqui los datos basicos de cada proveedor o contratista.</p>
+              </div>
+              <div class="grid two-columns">
+                <label>
+                  <span>Nombre o razon social</span>
+                  <input id="provider-name" type="text" required>
+                </label>
+                <label>
+                  <span>Rubro</span>
+                  <input id="provider-category" type="text" placeholder="Ej. materiales, electricidad, gasfiteria">
+                </label>
+                <label>
+                  <span>Persona de contacto</span>
+                  <input id="provider-contact" type="text">
+                </label>
+                <label>
+                  <span>Telefono</span>
+                  <input id="provider-phone" type="tel">
+                </label>
+                <label>
+                  <span>Correo</span>
+                  <input id="provider-email" type="email">
+                </label>
+                <label>
+                  <span>Estado</span>
+                  <select id="provider-status">
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                </label>
+              </div>
+              <div id="provider-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="provider-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar proveedor</button>
+              </div>
+            </form>
+
+            <form id="expense-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Registrar egreso</h3>
+                <p class="section-copy">Anota pagos de caja o banco con categoria, detalle y proveedor.</p>
+              </div>
+              <div class="grid two-columns">
+                <label>
+                  <span>Fecha</span>
+                  <input id="expense-date" type="date" required>
+                </label>
+                <label>
+                  <span>Monto (S/.)</span>
+                  <input id="expense-amount" type="number" min="0" step="0.01" required>
+                </label>
+                <label>
+                  <span>Categoria</span>
+                  <select id="expense-category" required>
+                    <option value="servicios">Servicios</option>
+                    <option value="mantenimiento">Mantenimiento</option>
+                    <option value="seguridad">Seguridad</option>
+                    <option value="legal">Legal</option>
+                    <option value="materiales">Materiales</option>
+                    <option value="administracion">Administracion</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Fondo</span>
+                  <select id="expense-fund" required>
+                    <option value="caja">Caja</option>
+                    <option value="banco">Banco</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Centro de costo</span>
+                  <input id="expense-cost-center" type="text" placeholder="Ej. areas comunes, gestion legal">
+                </label>
+                <label>
+                  <span>Proveedor</span>
+                  <select id="expense-provider"></select>
+                </label>
+                <label>
+                  <span>Socio relacionado</span>
+                  <select id="expense-related-record"></select>
+                </label>
+                <label class="full-width">
+                  <span>Detalle</span>
+                  <input id="expense-detail" type="text" placeholder="Ej. compra de materiales para limpieza">
+                </label>
+              </div>
+              <div id="expense-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="expense-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar egreso</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="module-grid">
+            <section class="panel inner-panel">
+              <h3>Proveedores registrados</h3>
+              <div id="providers-empty" class="empty-state">Aun no hay proveedores registrados.</div>
+              <div id="providers-list" class="records-list"></div>
+            </section>
+            <section class="panel inner-panel">
+              <h3>Egresos registrados</h3>
+              <div id="expenses-empty" class="empty-state">Aun no hay egresos registrados.</div>
+              <div id="expenses-list" class="records-list"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section id="tab-panel-incidencias" class="tab-panel hidden">
+        <section class="panel saved-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Mantenimiento e incidencias</h2>
+              <p>Registra problemas, asigna responsables y da seguimiento a trabajos pendientes.</p>
+            </div>
+          </div>
+
+          <div id="incidents-dashboard" class="finance-dashboard"></div>
+
+          <div class="module-grid">
+            <form id="incident-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Nueva incidencia</h3>
+                <p class="section-copy">Usa este registro para reclamos, observaciones y trabajos por atender.</p>
+              </div>
+              <div class="grid two-columns">
+                <label>
+                  <span>Socio relacionado</span>
+                  <select id="incident-record"></select>
+                </label>
+                <label>
+                  <span>Area</span>
+                  <input id="incident-area" type="text" placeholder="Ej. lote, porton, vereda, oficina">
+                </label>
+                <label class="full-width">
+                  <span>Titulo</span>
+                  <input id="incident-title" type="text" required>
+                </label>
+                <label class="full-width">
+                  <span>Detalle</span>
+                  <textarea id="incident-description" rows="4" required></textarea>
+                </label>
+                <label>
+                  <span>Prioridad</span>
+                  <select id="incident-priority">
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Critica</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Estado</span>
+                  <select id="incident-status">
+                    <option value="abierta">Abierta</option>
+                    <option value="en_proceso">En proceso</option>
+                    <option value="resuelta">Resuelta</option>
+                    <option value="cerrada">Cerrada</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Responsable</span>
+                  <input id="incident-responsible" type="text" placeholder="Ej. secretario, vocal, proveedor">
+                </label>
+                <label>
+                  <span>Fecha compromiso</span>
+                  <input id="incident-target-date" type="date">
+                </label>
+              </div>
+              <div id="incident-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="incident-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar incidencia</button>
+              </div>
+            </form>
+
+            <form id="work-order-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Orden de trabajo</h3>
+                <p class="section-copy">Relaciona una incidencia con proveedor, costo y avance del trabajo.</p>
+              </div>
+              <div class="grid two-columns">
+                <label class="full-width">
+                  <span>Incidencia</span>
+                  <select id="workorder-incident" required></select>
+                </label>
+                <label>
+                  <span>Proveedor</span>
+                  <select id="workorder-provider"></select>
+                </label>
+                <label>
+                  <span>Responsable</span>
+                  <input id="workorder-responsible" type="text">
+                </label>
+                <label>
+                  <span>Costo estimado (S/.)</span>
+                  <input id="workorder-cost" type="number" min="0" step="0.01">
+                </label>
+                <label>
+                  <span>Fecha compromiso</span>
+                  <input id="workorder-date" type="date">
+                </label>
+                <label>
+                  <span>Estado</span>
+                  <select id="workorder-status">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="asignada">Asignada</option>
+                    <option value="en_ejecucion">En ejecucion</option>
+                    <option value="cerrada">Cerrada</option>
+                  </select>
+                </label>
+                <label class="full-width">
+                  <span>Notas</span>
+                  <input id="workorder-notes" type="text" placeholder="Ej. visita programada, materiales pendientes">
+                </label>
+              </div>
+              <div id="workorder-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="workorder-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar orden</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="module-grid">
+            <section class="panel inner-panel">
+              <h3>Incidencias</h3>
+              <div id="incidents-empty" class="empty-state">Aun no hay incidencias registradas.</div>
+              <div id="incidents-list" class="records-list"></div>
+            </section>
+            <section class="panel inner-panel">
+              <h3>Ordenes de trabajo</h3>
+              <div id="workorders-empty" class="empty-state">Aun no hay ordenes de trabajo registradas.</div>
+              <div id="workorders-list" class="records-list"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section id="tab-panel-asambleas" class="tab-panel hidden">
+        <section class="panel saved-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Asambleas, acuerdos y documentos</h2>
+              <p>Organiza convocatorias, registra acuerdos y guarda documentos clave de la asociacion.</p>
+            </div>
+          </div>
+
+          <div id="governance-dashboard" class="finance-dashboard"></div>
+
+          <div class="module-grid module-grid-three">
+            <form id="assembly-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Nueva asamblea</h3>
+                <p class="section-copy">Deja lista la convocatoria o el registro de una reunion ya realizada.</p>
+              </div>
+              <div class="grid">
+                <label>
+                  <span>Titulo</span>
+                  <input id="assembly-title" type="text" required>
+                </label>
+                <label>
+                  <span>Fecha</span>
+                  <input id="assembly-date" type="date" required>
+                </label>
+                <label>
+                  <span>Estado</span>
+                  <select id="assembly-status">
+                    <option value="programada">Programada</option>
+                    <option value="realizada">Realizada</option>
+                    <option value="cerrada">Cerrada</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Asistencia</span>
+                  <input id="assembly-attendance" type="number" min="0" step="1">
+                </label>
+                <label>
+                  <span>Agenda</span>
+                  <textarea id="assembly-agenda" rows="4"></textarea>
+                </label>
+              </div>
+              <div id="assembly-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="assembly-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar asamblea</button>
+              </div>
+            </form>
+
+            <form id="agreement-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Nuevo acuerdo</h3>
+                <p class="section-copy">Asocia cada acuerdo a una asamblea y dale seguimiento.</p>
+              </div>
+              <div class="grid">
+                <label>
+                  <span>Asamblea</span>
+                  <select id="agreement-assembly" required></select>
+                </label>
+                <label>
+                  <span>Titulo</span>
+                  <input id="agreement-title" type="text" required>
+                </label>
+                <label>
+                  <span>Responsable</span>
+                  <input id="agreement-owner" type="text">
+                </label>
+                <label>
+                  <span>Fecha limite</span>
+                  <input id="agreement-date" type="date">
+                </label>
+                <label>
+                  <span>Estado</span>
+                  <select id="agreement-status">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_proceso">En proceso</option>
+                    <option value="cumplido">Cumplido</option>
+                    <option value="cerrado">Cerrado</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Detalle</span>
+                  <textarea id="agreement-detail" rows="4"></textarea>
+                </label>
+              </div>
+              <div id="agreement-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="agreement-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar acuerdo</button>
+              </div>
+            </form>
+
+            <form id="document-form" class="panel inner-panel form-stack">
+              <div>
+                <h3>Documento o comunicado</h3>
+                <p class="section-copy">Registra actas, comunicados, reglamentos o cualquier archivo de referencia.</p>
+              </div>
+              <div class="grid">
+                <label>
+                  <span>Tipo</span>
+                  <select id="document-type">
+                    <option value="acta">Acta</option>
+                    <option value="comunicado">Comunicado</option>
+                    <option value="reglamento">Reglamento</option>
+                    <option value="contrato">Contrato</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Titulo</span>
+                  <input id="document-title" type="text" required>
+                </label>
+                <label>
+                  <span>Fecha</span>
+                  <input id="document-date" type="date" required>
+                </label>
+                <label>
+                  <span>Dirigido a</span>
+                  <input id="document-audience" type="text" placeholder="Ej. junta, asociados, tesoreria">
+                </label>
+                <label>
+                  <span>Notas</span>
+                  <textarea id="document-notes" rows="4"></textarea>
+                </label>
+              </div>
+              <div id="document-message" class="form-message hidden" role="status"></div>
+              <div class="form-actions compact-actions">
+                <button id="document-cancel" class="ghost-button" type="button">Limpiar</button>
+                <button class="primary-button" type="submit">Guardar documento</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="module-grid">
+            <section class="panel inner-panel">
+              <h3>Asambleas registradas</h3>
+              <div id="assemblies-empty" class="empty-state">Aun no hay asambleas registradas.</div>
+              <div id="assemblies-list" class="records-list"></div>
+            </section>
+            <section class="panel inner-panel">
+              <h3>Acuerdos registrados</h3>
+              <div id="agreements-empty" class="empty-state">Aun no hay acuerdos registrados.</div>
+              <div id="agreements-list" class="records-list"></div>
+            </section>
+          </div>
+
+          <section class="panel inner-panel">
+            <h3>Documentos y comunicados</h3>
+            <div id="documents-empty" class="empty-state">Aun no hay documentos registrados.</div>
+            <div id="documents-list" class="records-list"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="tab-panel-reportes" class="tab-panel hidden">
+        <section class="panel saved-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Reportes y control</h2>
+              <p>Consulta el estado general del sistema y exporta la informacion principal de la demo.</p>
+            </div>
+          </div>
+
+          <div id="reports-overview" class="superadmin-overview"></div>
+
+          <div class="module-grid">
+            <section class="panel inner-panel">
+              <h3>Exportacion rapida</h3>
+              <p class="section-copy">Descarga archivos de Excel para revisar la informacion fuera del sistema.</p>
+              <div class="superadmin-actions">
+                <button id="export-records" class="secondary-button" type="button">Exportar socios (Excel)</button>
+                <button id="export-finance" class="secondary-button" type="button">Exportar actividades y aportes (Excel)</button>
+                <button id="export-expenses" class="secondary-button" type="button">Exportar egresos (Excel)</button>
+              </div>
+              <div id="reports-message" class="form-message hidden" role="status"></div>
+            </section>
+
+            <section class="panel inner-panel">
+              <h3>Resumen por modulo</h3>
+              <div id="reports-breakdown" class="records-list"></div>
+            </section>
+          </div>
+
+          <section class="panel inner-panel">
+            <h3>Actividad reciente</h3>
+            <div id="reports-activity" class="records-list"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="tab-panel-usuarios" class="tab-panel hidden">
+        <section id="account-admin-section" class="panel saved-panel hidden">
+        <div class="panel-header">
+          <div>
+            <h2>Gestion de cuentas directivas</h2>
+            <p>Crea, edita, elimina y cambia contrasenas de los usuarios de la junta.</p>
+          </div>
+        </div>
+
+        <div class="account-layout">
+          <form id="account-form" class="panel inner-panel form-stack">
+            <div>
+              <h3 id="account-form-title">Nueva cuenta directiva</h3>
+              <p class="section-copy">Solo el super admin puede manejar estas cuentas.</p>
+            </div>
+
+            <div class="grid two-columns">
+              <label>
+                <span>Nombre completo</span>
+                <input id="account-name" type="text" required>
+              </label>
+              <label>
+                <span>Usuario</span>
+                <input id="account-username" type="text" required>
+              </label>
+              <label>
+                <span>Correo</span>
+                <input id="account-email" type="email">
+              </label>
+              <label>
+                <span>Celular</span>
+                <input id="account-phone" type="tel">
+              </label>
+              <label>
+                <span>Cargo en la junta</span>
+                <select id="account-position">
+                  <option value="presidente">Presidente</option>
+                  <option value="vicepresidente">Vicepresidente</option>
+                  <option value="secretario">Secretario</option>
+                  <option value="tesorero">Tesorero</option>
+                    <option value="tesorera">Tesorera</option>
+                  <option value="vocal">Vocal</option>
+                  <option value="directivo">Directivo</option>
+                </select>
+              </label>
+              <label>
+                <span>Nueva contrasena</span>
+                <input id="account-password" type="password" placeholder="Obligatoria al crear">
+              </label>
+            </div>
+
+            <label class="checkbox-row">
+              <input id="account-active" type="checkbox" checked>
+              <span>Cuenta activa</span>
+            </label>
+
+            <div id="account-message" class="form-message hidden" role="status"></div>
+
+            <div class="form-actions compact-actions">
+              <button id="account-cancel" class="ghost-button" type="button">Cancelar</button>
+              <button class="primary-button" type="submit">Guardar cuenta</button>
+            </div>
+          </form>
+
+          <div class="panel inner-panel">
+            <h3>Cuentas registradas</h3>
+            <p class="section-copy">La cuenta del super admin queda protegida para evitar borrado accidental.</p>
+            <div id="accounts-empty" class="empty-state">
+              Aun no hay cuentas directivas creadas.
+            </div>
+            <div id="accounts-list" class="records-list"></div>
+          </div>
+        </div>
+        </section>
+      </section>
+
+      <section id="tab-panel-superadmin" class="tab-panel hidden">
+        <section class="panel saved-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Centro de control Super Admin</h2>
+              <p>Desde aqui puedes revisar el estado general del sistema y gestionar todos los modulos.</p>
+            </div>
+          </div>
+
+          <div id="superadmin-overview" class="superadmin-overview"></div>
+
+          <div class="superadmin-grid">
+            <section class="panel inner-panel">
+              <h3>Accesos rapidos</h3>
+              <p class="section-copy">Entra directamente al modulo que necesites administrar.</p>
+              <div class="superadmin-actions">
+                <button class="secondary-button" type="button" data-superadmin-nav="registro">Ir a Registro</button>
+                <button class="secondary-button" type="button" data-superadmin-nav="finanzas">Ir a Actividades y aportes</button>
+                <button class="secondary-button" type="button" data-superadmin-nav="tesoreria">Ir a Tesoreria</button>
+                <button class="secondary-button" type="button" data-superadmin-nav="incidencias">Ir a Incidencias</button>
+                <button class="secondary-button" type="button" data-superadmin-nav="asambleas">Ir a Asambleas</button>
+                <button class="secondary-button" type="button" data-superadmin-nav="reportes">Ir a Reportes</button>
+                <button class="secondary-button" type="button" data-superadmin-nav="usuarios">Ir a Usuarios</button>
+              </div>
+            </section>
+
+            <section class="panel inner-panel">
+              <h3>Mantenimiento global</h3>
+              <p class="section-copy">Acciones de limpieza y reinicio para esta demo local.</p>
+              <div class="superadmin-actions">
+                <button class="ghost-button" type="button" data-superadmin-action="clear-finance">Limpiar actividades y aportes</button>
+                <button class="ghost-button" type="button" data-superadmin-action="clear-directivos">Borrar cuentas directivas</button>
+                <button class="ghost-button" type="button" data-superadmin-action="reset-demo">Reiniciar toda la demo</button>
+              </div>
+              <div id="superadmin-message" class="form-message hidden" role="status"></div>
+            </section>
+          </div>
+
+          <section class="panel inner-panel">
+            <h3>Actividad reciente</h3>
+            <p class="section-copy">Resumen de los ultimos movimientos realizados en el prototipo.</p>
+            <div id="superadmin-activity" class="records-list"></div>
+          </section>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <template id="cotitular-template">
+    <article class="cotitular-card">
+      <div class="cotitular-header">
+        <strong class="cotitular-title">Cotitular</strong>
+        <button class="link-button remove-cotitular" type="button">Quitar</button>
+      </div>
+      <div class="grid two-columns">
+        <label>
+          <span>Nombres</span>
+          <input data-field="nombres" type="text">
+        </label>
+        <label>
+          <span>Apellidos</span>
+          <input data-field="apellidos" type="text">
+        </label>
+        <label>
+          <span>Tipo de documento</span>
+          <select data-field="tipoDocumento">
+            <option value="DNI">DNI</option>
+            <option value="CE">CE</option>
+            <option value="Pasaporte">Pasaporte</option>
+          </select>
+        </label>
+        <label>
+          <span>Numero de documento</span>
+          <input data-field="numeroDocumento" type="text">
+        </label>
+        <label>
+          <span>Celular</span>
+          <input data-field="celular" type="tel">
+        </label>
+        <label>
+          <span>Correo</span>
+          <input data-field="correo" type="email">
+        </label>
+        <label>
+          <span>Relacion</span>
+          <input data-field="relacion" type="text" placeholder="Ej. esposo, hermano, socio">
+        </label>
+        <label>
+          <span>Estado</span>
+          <select data-field="estado">
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </label>
+      </div>
+    </article>
+  </template>
+
+  <script src="remote-store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
