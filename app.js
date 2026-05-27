@@ -143,7 +143,6 @@ const recordsEmpty = document.getElementById("records-empty");
 const cotitularesList = document.getElementById("cotitulares-list");
 const cotitularTemplate = document.getElementById("cotitular-template");
 const resetButton = document.getElementById("reset-button");
-const clearStorageButton = document.getElementById("clear-storage");
 const addCotitularButton = document.getElementById("add-cotitular");
 const financeDashboard = document.getElementById("finance-dashboard");
 const financeSearchInput = document.getElementById("finance-search");
@@ -4297,34 +4296,6 @@ addCotitularButton.addEventListener("click", () => {
 
 resetButton.addEventListener("click", () => {
   resetForm();
-});
-
-clearStorageButton.addEventListener("click", async () => {
-  const finance = getFinanceData();
-  const treasury = getTreasuryData();
-  if (
-    finance.activities.length > 0
-    || finance.activityLots.length > 0
-    || finance.activityMovements.length > 0
-    || treasury.voluntaryContributions.length > 0
-  ) {
-    setMessage(messageBox, "No puedes limpiar los socios mientras existan registros monetarios asociados.", "error");
-    return;
-  }
-
-  await saveRecords([]);
-  if (selectedFinanceRecordId) {
-    selectedFinanceRecordId = null;
-  }
-  renderRecords();
-  renderFinanceRecordPicker();
-  renderFinanceSelectedCard();
-  renderCharges();
-  renderFinanceDashboard();
-  renderPaymentChargeOptions();
-  updateLotMeta();
-  renderSuperAdminPanel();
-  setMessage(messageBox, "Se limpio la informacion local de socios en esta demo.", "success");
 });
 
 recordsList.addEventListener("click", (event) => {
