@@ -156,6 +156,7 @@ const activityMessage = document.getElementById("activity-message");
 const activityCancelButton = document.getElementById("activity-cancel");
 const activityTitleInput = document.getElementById("activity-title");
 const activityDescriptionInput = document.getElementById("activity-description");
+const activityKindInput = document.getElementById("activity-kind");
 const activityDateInput = document.getElementById("activity-date");
 const activityTargetInput = document.getElementById("activity-target");
 const activitySuggestedInput = document.getElementById("activity-suggested");
@@ -166,6 +167,8 @@ const movementFormTitle = document.getElementById("movement-form-title");
 const movementMessage = document.getElementById("movement-message");
 const movementCancelButton = document.getElementById("movement-cancel");
 const movementSubmitButton = document.getElementById("movement-submit");
+const movementLotSearchInput = document.getElementById("movement-lot-search");
+const movementLotSearchHelp = document.getElementById("movement-lot-search-help");
 const movementLotSelect = document.getElementById("movement-lot");
 const movementTypeSelect = document.getElementById("movement-type");
 const movementAmountInput = document.getElementById("movement-amount");
@@ -188,6 +191,29 @@ const expenseProviderSelect = document.getElementById("expense-provider");
 const expenseRelatedRecordSelect = document.getElementById("expense-related-record");
 const expensesList = document.getElementById("expenses-list");
 const expensesEmpty = document.getElementById("expenses-empty");
+const voluntaryFundDashboard = document.getElementById("voluntary-fund-dashboard");
+const voluntaryContributionForm = document.getElementById("voluntary-contribution-form");
+const voluntaryContributionFormTitle = document.getElementById("voluntary-contribution-form-title");
+const voluntaryContributionMessage = document.getElementById("voluntary-contribution-message");
+const voluntaryContributionCancelButton = document.getElementById("voluntary-contribution-cancel");
+const voluntaryContributionRecordSelect = document.getElementById("voluntary-contribution-record");
+const voluntaryContributionDateInput = document.getElementById("voluntary-contribution-date");
+const voluntaryContributionAmountInput = document.getElementById("voluntary-contribution-amount");
+const voluntaryContributionMethodSelect = document.getElementById("voluntary-contribution-method");
+const voluntaryContributionDetailInput = document.getElementById("voluntary-contribution-detail");
+const voluntaryContributionsList = document.getElementById("voluntary-contributions-list");
+const voluntaryContributionsEmpty = document.getElementById("voluntary-contributions-empty");
+const voluntaryAllocationForm = document.getElementById("voluntary-allocation-form");
+const voluntaryAllocationFormTitle = document.getElementById("voluntary-allocation-form-title");
+const voluntaryAllocationMessage = document.getElementById("voluntary-allocation-message");
+const voluntaryAllocationCancelButton = document.getElementById("voluntary-allocation-cancel");
+const voluntaryAllocationTypeSelect = document.getElementById("voluntary-allocation-type");
+const voluntaryAllocationDateInput = document.getElementById("voluntary-allocation-date");
+const voluntaryAllocationActivitySelect = document.getElementById("voluntary-allocation-activity");
+const voluntaryAllocationAmountInput = document.getElementById("voluntary-allocation-amount");
+const voluntaryAllocationDetailInput = document.getElementById("voluntary-allocation-detail");
+const voluntaryAllocationsList = document.getElementById("voluntary-allocations-list");
+const voluntaryAllocationsEmpty = document.getElementById("voluntary-allocations-empty");
 const incidentsDashboard = document.getElementById("incidents-dashboard");
 const incidentForm = document.getElementById("incident-form");
 const incidentMessage = document.getElementById("incident-message");
@@ -249,6 +275,8 @@ let editingFinanceActivityId = null;
 let editingMovementId = null;
 let editingProviderId = null;
 let editingExpenseId = null;
+let editingVoluntaryContributionId = null;
+let editingVoluntaryAllocationId = null;
 let editingIncidentId = null;
 let editingWorkOrderId = null;
 let editingAssemblyId = null;
@@ -523,9 +551,40 @@ function getActivityById(activityId) {
   return getFinanceData().activities.find((activity) => activity.id === activityId) || null;
 }
 
+function getActivityKind(activity) {
+  return activity?.kind || "actividad_comunal";
+}
+
+function isFormalQuota(activity) {
+  return getActivityKind(activity) === "cuota_formal";
+}
+
+function getActivityKindLabel(kind) {
+  return kind === "cuota_formal" ? "Cuota formal" : "Actividad comunal";
+}
+
+function getActivityContributionLabel(activity) {
+  return isFormalQuota(activity) ? "Cuota por lote" : "Aporte sugerido";
+}
+
+function getActivityBalanceLabel(activity) {
+  return isFormalQuota(activity) ? "Deuda pendiente" : "Por coordinar con la junta";
+}
+
+function getActivityPendingLotsLabel(activity) {
+  return isFormalQuota(activity) ? "Lotes con deuda formal" : "Lotes por coordinar";
+}
+
+function getActivityScopeCopy(activity) {
+  return isFormalQuota(activity)
+    ? "Registro formal que si acumula deuda pendiente hasta que se pague, compense o se exonere."
+    : "Registro comunitario que no acumula deuda automatica; deja seguimiento y reincidencia para decision de la junta.";
+}
+
 function getMovementTypeLabel(type) {
   const labels = {
     aporte_dinero: "Aporto dinero",
+    aporte_voluntario: "Aporte voluntario adicional",
     devolucion: "Devolucion de aporte",
     apoyo_fisico: "Ayudo fisicamente",
     compensacion_aprobada: "Compensacion aprobada",
@@ -550,6 +609,44 @@ function getMethodLabel(method) {
   };
 
   return labels[method] || humanizeValue(method);
+}
+
+function normalizeExpenseFund(fund) {
+  return fund === "banco" ? "caja" : (fund || "caja");
+}
+
+function getExpenseFundLabel(fund) {
+  return normalizeExpenseFund(fund) === "caja" ? "Caja chica" : humanizeValue(fund);
+}
+
+function buildRecordSnapshot(record) {
+  return {
+    titular: `${record?.titular?.nombres || ""} ${record?.titular?.apellidos || ""}`.trim(),
+    documento: `${record?.titular?.tipoDocumento || ""} ${record?.titular?.numeroDocumento || ""}`.trim(),
+    manzana: record?.ubicacion?.manzana || "",
+    lote: record?.ubicacion?.lote || ""
+  };
+}
+
+function getVoluntaryContributionById(contributionId) {
+  return getTreasuryData().voluntaryContributions.find((contribution) => contribution.id === contributionId) || null;
+}
+
+function getVoluntaryAllocationById(allocationId) {
+  return getTreasuryData().voluntaryAllocations.find((allocation) => allocation.id === allocationId) || null;
+}
+
+function getActivitySupportFromFund(activityId, options = {}) {
+  const { ignoreAllocationId = null } = options;
+  return getTreasuryData().voluntaryAllocations
+    .filter((allocation) => allocation.type === "apoyo_actividad" && allocation.activityId === activityId && allocation.id !== ignoreAllocationId)
+    .reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0);
+}
+
+function getPortalActivitySupportFromFund(activityId) {
+  return getPortalTreasuryData().voluntaryAllocations
+    .filter((allocation) => allocation.type === "apoyo_actividad" && allocation.activityId === activityId)
+    .reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0);
 }
 
 function getActivityLots(activityId) {
@@ -582,12 +679,7 @@ function syncActivityLotsForActivity(activity, finance) {
       id: existing ? existing.id : generateId(),
       activityId: activity.id,
       recordId: record.id,
-      recordSnapshot: {
-        titular: `${record.titular.nombres} ${record.titular.apellidos}`,
-        documento: `${record.titular.tipoDocumento} ${record.titular.numeroDocumento}`,
-        manzana: record.ubicacion.manzana,
-        lote: record.ubicacion.lote
-      },
+      recordSnapshot: buildRecordSnapshot(record),
       suggestedAmount: Number(activity.suggestedPerLot || 0),
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now
@@ -604,34 +696,45 @@ function syncActivityLotsForActivity(activity, finance) {
 
 function getActivityLotComputedState(activityLot, options = {}) {
   const { ignoreMovementId = null } = options;
+  const activity = getActivityById(activityLot.activityId);
   const movements = getActivityMovements(activityLot.id);
   const activeMovements = movements.filter((movement) => movement.status !== "anulado" && movement.id !== ignoreMovementId);
   const suggestedAmount = Number(activityLot.suggestedAmount || 0);
-  const grossMoneyAmount = activeMovements
+  const grossBaseMoneyAmount = activeMovements
     .filter((movement) => movement.type === "aporte_dinero")
+    .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
+  const grossVoluntaryAmount = activeMovements
+    .filter((movement) => movement.type === "aporte_voluntario")
     .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
   const returnedAmount = activeMovements
     .filter((movement) => movement.type === "devolucion")
     .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
+  const grossMoneyAmount = grossBaseMoneyAmount + grossVoluntaryAmount;
   const moneyAmount = Math.max(grossMoneyAmount - returnedAmount, 0);
+  const baseMoneyAmount = Math.min(moneyAmount, suggestedAmount);
+  const voluntaryAmount = Math.max(moneyAmount - suggestedAmount, 0);
   const approvedCompensation = activeMovements
     .filter((movement) => movement.type === "compensacion_aprobada")
     .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
   const hasPhysicalSupport = activeMovements.some((movement) => movement.type === "apoyo_fisico");
   const isExonerated = activeMovements.some((movement) => movement.type === "exoneracion");
   const noResponseMarked = activeMovements.some((movement) => movement.type === "sin_respuesta");
-  const recognizedAmount = moneyAmount + approvedCompensation;
+  const recognizedAmount = baseMoneyAmount + approvedCompensation;
   const remainingAmount = isExonerated ? 0 : Math.max(suggestedAmount - recognizedAmount, 0);
   const maxRefundableAmount = Math.max(grossMoneyAmount - returnedAmount, 0);
+  const accumulatesDebt = isFormalQuota(activity);
+  const debtAmount = accumulatesDebt ? remainingAmount : 0;
+  const coordinationAmount = accumulatesDebt ? 0 : remainingAmount;
+  const requiresCommunityFollowUp = !accumulatesDebt && remainingAmount > 0 && !isExonerated;
   let status = "pendiente";
 
   if (isExonerated) {
     status = "exonerado";
   } else if (recognizedAmount >= suggestedAmount && approvedCompensation > 0) {
     status = "compensado_por_junta";
-  } else if (moneyAmount >= suggestedAmount && moneyAmount > 0) {
+  } else if (baseMoneyAmount >= suggestedAmount && baseMoneyAmount > 0) {
     status = "aporte_completo";
-  } else if (moneyAmount > 0) {
+  } else if (baseMoneyAmount > 0) {
     status = "aporte_parcial";
   } else if (hasPhysicalSupport) {
     status = "apoyo_fisico_registrado";
@@ -644,11 +747,19 @@ function getActivityLotComputedState(activityLot, options = {}) {
     activeMovements,
     moneyAmount,
     grossMoneyAmount,
+    grossBaseMoneyAmount,
+    grossVoluntaryAmount,
+    baseMoneyAmount,
+    voluntaryAmount,
     returnedAmount,
     approvedCompensation,
     recognizedAmount,
     remainingAmount,
     maxRefundableAmount,
+    accumulatesDebt,
+    debtAmount,
+    coordinationAmount,
+    requiresCommunityFollowUp,
     hasPhysicalSupport,
     isExonerated,
     noResponseMarked,
@@ -661,22 +772,28 @@ function getActivityComputedSummary(activity) {
     return {
       targetAmount: 0,
       collectedAmount: 0,
+      voluntaryAmount: 0,
+      fundSupportAmount: 0,
+      surplusAmount: 0,
       missingAmount: 0,
       totalLots: 0,
       paidLots: 0,
       supportLots: 0,
       compensatedLots: 0,
       noResponseLots: 0,
-      pendingLots: 0
+      pendingLots: 0,
+      debtAmount: 0,
+      coordinationAmount: 0
     };
   }
 
   const activityLots = getActivityLots(activity.id);
-  return activityLots.reduce(
+  const summary = activityLots.reduce(
     (accumulator, activityLot) => {
       const computed = getActivityLotComputedState(activityLot);
       accumulator.targetAmount = Number(activity.targetAmount || 0);
       accumulator.collectedAmount += computed.moneyAmount;
+      accumulator.voluntaryAmount += computed.voluntaryAmount;
       accumulator.totalLots += 1;
       if (computed.moneyAmount > 0) {
         accumulator.paidLots += 1;
@@ -693,20 +810,31 @@ function getActivityComputedSummary(activity) {
       if (computed.remainingAmount > 0 && !computed.isExonerated) {
         accumulator.pendingLots += 1;
       }
+      accumulator.debtAmount += computed.debtAmount;
+      accumulator.coordinationAmount += computed.coordinationAmount;
       return accumulator;
     },
     {
       targetAmount: Number(activity.targetAmount || 0),
       collectedAmount: 0,
+      voluntaryAmount: 0,
+      fundSupportAmount: 0,
+      surplusAmount: 0,
       missingAmount: 0,
       totalLots: 0,
       paidLots: 0,
       supportLots: 0,
       compensatedLots: 0,
       noResponseLots: 0,
-      pendingLots: 0
+      pendingLots: 0,
+      debtAmount: 0,
+      coordinationAmount: 0
     }
   );
+  summary.fundSupportAmount = getActivitySupportFromFund(activity.id);
+  summary.surplusAmount = Math.max(summary.collectedAmount - summary.targetAmount, 0);
+  summary.missingAmount = Math.max(summary.targetAmount - summary.collectedAmount - summary.fundSupportAmount, 0);
+  return summary;
 }
 
 function getPortalActivityById(activityId) {
@@ -724,33 +852,44 @@ function getPortalActivityMovements(activityLotId) {
 }
 
 function getPortalActivityLotComputedState(activityLot) {
+  const activity = getPortalActivityById(activityLot.activityId);
   const movements = getPortalActivityMovements(activityLot.id);
   const activeMovements = movements.filter((movement) => movement.status !== "anulado");
   const suggestedAmount = Number(activityLot.suggestedAmount || 0);
-  const grossMoneyAmount = activeMovements
+  const grossBaseMoneyAmount = activeMovements
     .filter((movement) => movement.type === "aporte_dinero")
+    .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
+  const grossVoluntaryAmount = activeMovements
+    .filter((movement) => movement.type === "aporte_voluntario")
     .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
   const returnedAmount = activeMovements
     .filter((movement) => movement.type === "devolucion")
     .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
+  const grossMoneyAmount = grossBaseMoneyAmount + grossVoluntaryAmount;
   const moneyAmount = Math.max(grossMoneyAmount - returnedAmount, 0);
+  const baseMoneyAmount = Math.min(moneyAmount, suggestedAmount);
+  const voluntaryAmount = Math.max(moneyAmount - suggestedAmount, 0);
   const approvedCompensation = activeMovements
     .filter((movement) => movement.type === "compensacion_aprobada")
     .reduce((sum, movement) => sum + Number(movement.amount || 0), 0);
   const hasPhysicalSupport = activeMovements.some((movement) => movement.type === "apoyo_fisico");
   const isExonerated = activeMovements.some((movement) => movement.type === "exoneracion");
   const noResponseMarked = activeMovements.some((movement) => movement.type === "sin_respuesta");
-  const recognizedAmount = moneyAmount + approvedCompensation;
+  const recognizedAmount = baseMoneyAmount + approvedCompensation;
   const remainingAmount = isExonerated ? 0 : Math.max(suggestedAmount - recognizedAmount, 0);
+  const accumulatesDebt = isFormalQuota(activity);
+  const debtAmount = accumulatesDebt ? remainingAmount : 0;
+  const coordinationAmount = accumulatesDebt ? 0 : remainingAmount;
+  const requiresCommunityFollowUp = !accumulatesDebt && remainingAmount > 0 && !isExonerated;
   let status = "pendiente";
 
   if (isExonerated) {
     status = "exonerado";
   } else if (recognizedAmount >= suggestedAmount && approvedCompensation > 0) {
     status = "compensado_por_junta";
-  } else if (moneyAmount >= suggestedAmount && moneyAmount > 0) {
+  } else if (baseMoneyAmount >= suggestedAmount && baseMoneyAmount > 0) {
     status = "aporte_completo";
-  } else if (moneyAmount > 0) {
+  } else if (baseMoneyAmount > 0) {
     status = "aporte_parcial";
   } else if (hasPhysicalSupport) {
     status = "apoyo_fisico_registrado";
@@ -763,10 +902,18 @@ function getPortalActivityLotComputedState(activityLot) {
     activeMovements,
     moneyAmount,
     grossMoneyAmount,
+    grossBaseMoneyAmount,
+    grossVoluntaryAmount,
+    baseMoneyAmount,
+    voluntaryAmount,
     returnedAmount,
     approvedCompensation,
     recognizedAmount,
     remainingAmount,
+    accumulatesDebt,
+    debtAmount,
+    coordinationAmount,
+    requiresCommunityFollowUp,
     hasPhysicalSupport,
     isExonerated,
     noResponseMarked,
@@ -779,22 +926,28 @@ function getPortalActivityComputedSummary(activity) {
     return {
       targetAmount: 0,
       collectedAmount: 0,
+      voluntaryAmount: 0,
+      fundSupportAmount: 0,
+      surplusAmount: 0,
       missingAmount: 0,
       totalLots: 0,
       paidLots: 0,
       supportLots: 0,
       compensatedLots: 0,
       noResponseLots: 0,
-      pendingLots: 0
+      pendingLots: 0,
+      debtAmount: 0,
+      coordinationAmount: 0
     };
   }
 
   const activityLots = getPortalActivityLots(activity.id);
-  return activityLots.reduce(
+  const summary = activityLots.reduce(
     (accumulator, activityLot) => {
       const computed = getPortalActivityLotComputedState(activityLot);
       accumulator.targetAmount = Number(activity.targetAmount || 0);
       accumulator.collectedAmount += computed.moneyAmount;
+      accumulator.voluntaryAmount += computed.voluntaryAmount;
       accumulator.totalLots += 1;
       if (computed.moneyAmount > 0) {
         accumulator.paidLots += 1;
@@ -811,34 +964,51 @@ function getPortalActivityComputedSummary(activity) {
       if (computed.remainingAmount > 0 && !computed.isExonerated) {
         accumulator.pendingLots += 1;
       }
+      accumulator.debtAmount += computed.debtAmount;
+      accumulator.coordinationAmount += computed.coordinationAmount;
       return accumulator;
     },
     {
       targetAmount: Number(activity.targetAmount || 0),
       collectedAmount: 0,
+      voluntaryAmount: 0,
+      fundSupportAmount: 0,
+      surplusAmount: 0,
       missingAmount: 0,
       totalLots: 0,
       paidLots: 0,
       supportLots: 0,
       compensatedLots: 0,
       noResponseLots: 0,
-      pendingLots: 0
+      pendingLots: 0,
+      debtAmount: 0,
+      coordinationAmount: 0
     }
   );
+  summary.fundSupportAmount = getPortalActivitySupportFromFund(activity.id);
+  summary.surplusAmount = Math.max(summary.collectedAmount - summary.targetAmount, 0);
+  summary.missingAmount = Math.max(summary.targetAmount - summary.collectedAmount - summary.fundSupportAmount, 0);
+  return summary;
 }
 
 function getFinanceSummaryForSocio(recordId) {
   const activityLots = getFinanceData().activityLots.filter((activityLot) => activityLot.recordId === recordId);
   return activityLots.reduce(
     (accumulator, activityLot) => {
+      const activity = getActivityById(activityLot.activityId);
       const computed = getActivityLotComputedState(activityLot);
       accumulator.total += Number(activityLot.suggestedAmount || 0);
       accumulator.paid += computed.moneyAmount;
       accumulator.balance += computed.remainingAmount;
-      accumulator.pendingCount += computed.remainingAmount > 0 ? 1 : 0;
+      accumulator.voluntaryAmount += computed.voluntaryAmount;
+      accumulator.formalDebt += computed.debtAmount;
+      accumulator.communityCoordinationAmount += computed.coordinationAmount;
+      accumulator.formalPendingCount += computed.debtAmount > 0 ? 1 : 0;
+      accumulator.communityPendingCount += computed.requiresCommunityFollowUp ? 1 : 0;
+      accumulator.communityNoResponseCount += (!isFormalQuota(activity) && computed.noResponseMarked) ? 1 : 0;
       return accumulator;
     },
-    { total: 0, paid: 0, balance: 0, pendingCount: 0 }
+    { total: 0, paid: 0, balance: 0, voluntaryAmount: 0, formalDebt: 0, communityCoordinationAmount: 0, formalPendingCount: 0, communityPendingCount: 0, communityNoResponseCount: 0 }
   );
 }
 
@@ -861,15 +1031,18 @@ function calculateSuggestedPerLot(targetAmount) {
 
 function updateSuggestedPerLotField() {
   const { participantCount, suggestedAmount } = calculateSuggestedPerLot(activityTargetInput.value);
-  activitySuggestedInput.value = participantCount > 0 && suggestedAmount > 0 ? suggestedAmount.toFixed(2) : "";
+  activitySuggestedInput.placeholder = participantCount > 0 && suggestedAmount > 0 ? suggestedAmount.toFixed(2) : "";
 
   if (!activitySuggestedHelp) {
     return;
   }
 
+  const kind = activityKindInput?.value || "actividad_comunal";
   activitySuggestedHelp.textContent = participantCount === 0
-    ? "Primero registra al menos un lote/socio activo para calcular la sugerencia."
-    : `Calculado automaticamente: meta total dividida entre ${participantCount} lote(s) activo(s).`;
+    ? "Primero registra al menos un lote/socio activo para tener una referencia automatica."
+    : kind === "cuota_formal"
+      ? `Referencia automatica: cuota total dividida entre ${participantCount} lote(s) activo(s) = ${formatCurrency(suggestedAmount)}. Puedes escribir otro monto manualmente.`
+      : `Referencia automatica: meta total dividida entre ${participantCount} lote(s) activo(s) = ${formatCurrency(suggestedAmount)}. La junta puede definir otro monto manualmente.`;
 }
 
 function populatePortalManzanas() {
@@ -910,6 +1083,8 @@ function populatePortalLotes(selectedLote = "") {
 function buildPortalRecentActivity() {
   const finance = getPortalFinanceData();
   const treasury = getPortalTreasuryData();
+  const voluntaryContributions = Array.isArray(treasury?.voluntaryContributions) ? treasury.voluntaryContributions : [];
+  const voluntaryAllocations = Array.isArray(treasury?.voluntaryAllocations) ? treasury.voluntaryAllocations : [];
   const incidentsData = getCurrentUser() ? getIncidentsData() : { incidents: [] };
   const governance = getPortalGovernanceData();
   const items = [];
@@ -918,7 +1093,7 @@ function buildPortalRecentActivity() {
     items.push({
       at: activity.updatedAt || activity.createdAt,
       title: activity.title,
-      detail: `Actividad ${humanizeValue(activity.status)} con meta ${formatCurrency(activity.targetAmount)}`,
+      detail: `${getActivityKindLabel(getActivityKind(activity))} ${humanizeValue(activity.status)} con meta ${formatCurrency(activity.targetAmount)}`,
       tag: "Actividades"
     });
   });
@@ -937,8 +1112,35 @@ function buildPortalRecentActivity() {
     items.push({
       at: expense.updatedAt || expense.createdAt,
       title: expense.detail || humanizeValue(expense.category),
-      detail: `Egreso desde ${humanizeValue(expense.fund)} por ${formatCurrency(expense.amount)}`,
+      detail: `Egreso desde ${getExpenseFundLabel(expense.fund)} por ${formatCurrency(expense.amount)}`,
       tag: "Tesoreria"
+    });
+  });
+
+  voluntaryContributions.forEach((contribution) => {
+    items.push({
+      at: contribution.updatedAt || contribution.createdAt,
+      title: contribution.recordSnapshot?.titular || "Aporte voluntario",
+      detail: `Aporte al fondo comun por ${formatCurrency(contribution.amount)}`,
+      tag: "Fondo comun"
+    });
+  });
+
+  voluntaryAllocations.forEach((allocation) => {
+    items.push({
+      at: allocation.updatedAt || allocation.createdAt,
+      title: allocation.type === "apoyo_actividad" ? "Apoyo desde fondo" : "Uso del fondo",
+      detail: `${allocation.activitySnapshot?.title || allocation.detail || "Fondo comun"} por ${formatCurrency(allocation.amount)}`,
+      tag: "Fondo comun"
+    });
+  });
+
+  getPortalVoluntaryFundSummary().activitySurplusEntries.forEach((entry) => {
+    items.push({
+      at: entry.date,
+      title: entry.activitySnapshot?.title || "Excedente de actividad",
+      detail: `Excedente automatico al fondo por ${formatCurrency(entry.amount)}`,
+      tag: "Fondo comun"
     });
   });
 
@@ -967,14 +1169,14 @@ function buildPortalRecentActivity() {
 }
 
 function getPortalLookupRecords() {
-  const documentNumber = portalLookupState.documentNumber.trim().toLowerCase();
+  const documentNumber = normalizeLookupDocument(portalLookupState.documentNumber);
   if (!documentNumber) {
     return [];
   }
 
   return getPortalRecords()
     .filter((record) => (
-      String(record.titular.numeroDocumento || "").trim().toLowerCase() === documentNumber
+      normalizeLookupDocument(record.titular.numeroDocumento) === documentNumber
       && (!portalLookupState.manzana || record.ubicacion.manzana === portalLookupState.manzana)
       && (!portalLookupState.lote || record.ubicacion.lote === portalLookupState.lote)
     ))
@@ -987,10 +1189,18 @@ function getPortalLookupRecords() {
     });
 }
 
+function normalizeLookupDocument(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s.-]+/g, "");
+}
+
 function renderPortalOverview() {
   const finance = getPortalFinanceData();
   const treasury = getPortalTreasuryData();
   const governance = getPortalGovernanceData();
+  const voluntaryFund = getPortalVoluntaryFundSummary();
   const activitiesSummary = finance.activities.reduce(
     (accumulator, activity) => {
       const summary = getPortalActivityComputedSummary(activity);
@@ -998,33 +1208,35 @@ function renderPortalOverview() {
       accumulator.collected += summary.collectedAmount;
       accumulator.pendingLots += summary.pendingLots;
       accumulator.total += 1;
+      accumulator.formalCount += isFormalQuota(activity) ? 1 : 0;
+      accumulator.formalDebt += summary.debtAmount;
+      accumulator.communityCoordination += summary.coordinationAmount;
       return accumulator;
     },
-    { target: 0, collected: 0, pendingLots: 0, total: 0 }
+    { target: 0, collected: 0, pendingLots: 0, total: 0, formalCount: 0, formalDebt: 0, communityCoordination: 0 }
   );
-  const missingAmount = Math.max(activitiesSummary.target - activitiesSummary.collected, 0);
   const totalExpenses = treasury.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 
   portalOverview.innerHTML = `
     <article class="superadmin-card">
-      <h3>Actividades</h3>
-      <p>Total de actividades comunales visibles</p>
+      <h3>Registros monetarios</h3>
+      <p>Total de actividades y cuotas visibles</p>
       <span class="superadmin-value">${activitiesSummary.total}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Meta acumulada</h3>
-      <p>Monto total esperado</p>
-      <span class="superadmin-value">${formatCurrency(activitiesSummary.target)}</span>
+      <h3>Cuotas formales</h3>
+      <p>Registros que si generan deuda acumulable</p>
+      <span class="superadmin-value">${activitiesSummary.formalCount}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Recaudado</h3>
-      <p>Dinero neto registrado</p>
-      <span class="superadmin-value">${formatCurrency(activitiesSummary.collected)}</span>
+      <h3>Deuda formal</h3>
+      <p>Monto pendiente solo en cuotas formales</p>
+      <span class="superadmin-value">${formatCurrency(activitiesSummary.formalDebt)}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Faltante</h3>
-      <p>Monto aun no cubierto</p>
-      <span class="superadmin-value">${formatCurrency(missingAmount)}</span>
+      <h3>Por coordinar</h3>
+      <p>Monto referencial pendiente en actividades comunales</p>
+      <span class="superadmin-value">${formatCurrency(activitiesSummary.communityCoordination)}</span>
     </article>
     <article class="superadmin-card">
       <h3>Egresos</h3>
@@ -1035,6 +1247,11 @@ function renderPortalOverview() {
       <h3>Asambleas</h3>
       <p>Asambleas y acuerdos visibles</p>
       <span class="superadmin-value">${governance.assemblies.length + governance.agreements.length}</span>
+    </article>
+    <article class="superadmin-card">
+      <h3>Fondo comun</h3>
+      <p>Saldo disponible entre aportes y excedentes</p>
+      <span class="superadmin-value">${formatCurrency(voluntaryFund.balance)}</span>
     </article>
   `;
 }
@@ -1058,14 +1275,13 @@ function renderPortalActivities() {
   portalActivitiesList.innerHTML = "";
   portalActivitiesEmpty.style.display = activities.length === 0 ? "block" : "none";
   portalActivitiesEmpty.textContent = finance.activities.length === 0
-    ? "Aun no hay actividades comunales registradas."
-    : "No hay actividades que coincidan con ese filtro.";
+    ? "Aun no hay actividades ni cuotas registradas."
+    : "No hay registros monetarios que coincidan con ese filtro.";
 
   activities.forEach((activity) => {
     const summary = getPortalActivityComputedSummary(activity);
-    const missingAmount = Math.max(summary.targetAmount - summary.collectedAmount, 0);
     const progressPercent = summary.targetAmount > 0
-      ? Math.min((summary.collectedAmount / summary.targetAmount) * 100, 100)
+      ? Math.min(((summary.collectedAmount + summary.fundSupportAmount) / summary.targetAmount) * 100, 100)
       : 0;
     const card = document.createElement("article");
     card.className = "record-card";
@@ -1073,9 +1289,10 @@ function renderPortalActivities() {
       <div class="record-header">
         <div>
           <h3 class="record-title">${activity.title}</h3>
-          <p class="record-subtitle">${formatDate(activity.date)} | ${humanizeValue(activity.status)}</p>
+          <p class="record-subtitle">${formatDate(activity.date)} | ${getActivityKindLabel(getActivityKind(activity))} | ${humanizeValue(activity.status)}</p>
           <p class="record-extra">${activity.description || "Sin detalle adicional."}</p>
-          <p class="record-extra">Meta: ${formatCurrency(activity.targetAmount)} | Recaudado: ${formatCurrency(summary.collectedAmount)} | Faltante: ${formatCurrency(missingAmount)}</p>
+          <p class="record-extra">Meta: ${formatCurrency(activity.targetAmount)} | Recaudado: ${formatCurrency(summary.collectedAmount)} | Fondo: ${formatCurrency(summary.fundSupportAmount)} | Excedente: ${formatCurrency(summary.surplusAmount)}</p>
+          <p class="record-extra">${getActivityBalanceLabel(activity)}: ${formatCurrency(isFormalQuota(activity) ? summary.debtAmount : summary.coordinationAmount)}</p>
           <p class="record-extra">Lotes con aporte: ${summary.paidLots} | Ayuda fisica: ${summary.supportLots} | Pendientes: ${summary.pendingLots}</p>
         </div>
         <div class="tag-row">
@@ -1095,7 +1312,7 @@ function renderPortalActivities() {
 function renderPortalRecentActivity() {
   const items = buildPortalRecentActivity();
   portalRecentActivity.innerHTML = items.length === 0
-    ? '<div class="empty-state">Aun no hay actividad visible en el portal.</div>'
+    ? '<div class="empty-state">Aun no hay movimientos visibles en el portal.</div>'
     : "";
 
   items.forEach((item) => {
@@ -1139,10 +1356,17 @@ function getPortalLotSummary(total) {
     };
   }
 
-  if (total.balance <= 0 && (total.paid > 0 || total.compensated > 0 || total.suggested > 0)) {
+  if (total.formalDebt <= 0 && total.communityPendingCount <= 0 && (total.paid > 0 || total.compensated > 0 || total.suggested > 0)) {
     return {
       label: "Al dia o regularizado",
       className: "success-tag"
+    };
+  }
+
+  if (total.formalDebt > 0) {
+    return {
+      label: "Cuota formal pendiente",
+      className: "warning-tag"
     };
   }
 
@@ -1159,21 +1383,26 @@ function getPortalLotSummary(total) {
   };
 }
 
-function renderPortalAccountResult() {
+function renderPortalAccountResult(recordsOverride = null) {
   const hasLookup = portalLookupState.documentNumber;
   if (!hasLookup) {
     portalAccountResult.innerHTML = '<div class="empty-state">Completa al menos el documento para revisar los lotes asociados.</div>';
     return;
   }
 
-  const records = getPortalLookupRecords();
+  const records = Array.isArray(recordsOverride) ? recordsOverride : getPortalLookupRecords();
+  const portalTreasury = getPortalTreasuryData();
+  const voluntaryContributions = Array.isArray(portalTreasury?.voluntaryContributions) ? portalTreasury.voluntaryContributions : [];
   if (records.length === 0) {
     portalAccountResult.innerHTML = '<div class="empty-state">No se encontraron lotes asociados a ese documento con los filtros indicados.</div>';
     return;
   }
 
   const people = [...new Set(records.map((record) => `${record.titular.nombres} ${record.titular.apellidos}`.trim()).filter(Boolean))];
-  const globalTotals = { suggested: 0, paid: 0, returned: 0, compensated: 0, balance: 0 };
+  const globalTotals = { suggested: 0, paid: 0, voluntary: 0, returned: 0, compensated: 0, balance: 0, formalDebt: 0, communityCoordination: 0, communityPendingCount: 0 };
+  const voluntaryContributionTotal = voluntaryContributions
+    .filter((contribution) => records.some((record) => record.id === contribution.recordId))
+    .reduce((sum, contribution) => sum + Number(contribution.amount || 0), 0);
 
   const lotCardsHtml = records.map((record) => {
     const activityLots = getPortalFinanceData().activityLots
@@ -1190,26 +1419,38 @@ function renderPortalAccountResult() {
 
     const totals = activityLots.reduce(
       (accumulator, activityLot) => {
+        const activity = getPortalActivityById(activityLot.activityId);
         const computed = getPortalActivityLotComputedState(activityLot);
         accumulator.suggested += Number(activityLot.suggestedAmount || 0);
         accumulator.paid += computed.moneyAmount;
+        accumulator.voluntary += computed.voluntaryAmount;
         accumulator.returned += computed.returnedAmount;
         accumulator.compensated += computed.approvedCompensation;
         accumulator.balance += computed.remainingAmount;
+        accumulator.formalDebt += computed.debtAmount;
+        accumulator.communityCoordination += computed.coordinationAmount;
+        accumulator.communityPendingCount += (!isFormalQuota(activity) && computed.requiresCommunityFollowUp) ? 1 : 0;
         return accumulator;
       },
-      { suggested: 0, paid: 0, returned: 0, compensated: 0, balance: 0 }
+      { suggested: 0, paid: 0, voluntary: 0, returned: 0, compensated: 0, balance: 0, formalDebt: 0, communityCoordination: 0, communityPendingCount: 0 }
     );
 
     globalTotals.suggested += totals.suggested;
     globalTotals.paid += totals.paid;
+    globalTotals.voluntary += totals.voluntary;
     globalTotals.returned += totals.returned;
     globalTotals.compensated += totals.compensated;
     globalTotals.balance += totals.balance;
+    globalTotals.formalDebt += totals.formalDebt;
+    globalTotals.communityCoordination += totals.communityCoordination;
+    globalTotals.communityPendingCount += totals.communityPendingCount;
 
     const lotState = getPortalLotSummary(totals);
+    const contributions = voluntaryContributions
+      .filter((contribution) => contribution.recordId === record.id)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
     const activitiesHtml = activityLots.length === 0
-      ? '<div class="empty-state">Este lote aun no tiene actividades comunales asociadas.</div>'
+      ? '<div class="empty-state">Este lote aun no tiene registros monetarios asociados.</div>'
       : activityLots.map((activityLot) => {
         const activity = getPortalActivityById(activityLot.activityId);
         const computed = getPortalActivityLotComputedState(activityLot);
@@ -1218,8 +1459,9 @@ function renderPortalAccountResult() {
             <div class="record-header">
               <div>
                 <h3 class="record-title">${activity ? activity.title : "Actividad no encontrada"}</h3>
-                <p class="record-subtitle">${activity ? formatDate(activity.date) : "-"} | ${getPortalActivityStatusLabel(computed.status)}</p>
-                <p class="record-extra">Aporte referencial: ${formatCurrency(activityLot.suggestedAmount)} | Registrado a favor: ${formatCurrency(computed.moneyAmount)} | Devuelto: ${formatCurrency(computed.returnedAmount)} | Por regularizar: ${formatCurrency(computed.remainingAmount)}</p>
+                <p class="record-subtitle">${activity ? formatDate(activity.date) : "-"} | ${activity ? getActivityKindLabel(getActivityKind(activity)) : "-"} | ${getPortalActivityStatusLabel(computed.status)}</p>
+                <p class="record-extra">${activity ? getActivityContributionLabel(activity) : "Referencia por lote"}: ${formatCurrency(activityLot.suggestedAmount)} | Registrado a favor: ${formatCurrency(computed.moneyAmount)} | Voluntario adicional: ${formatCurrency(computed.voluntaryAmount)} | Devuelto: ${formatCurrency(computed.returnedAmount)} | ${activity ? getActivityBalanceLabel(activity) : "Por regularizar"}: ${formatCurrency(computed.remainingAmount)}</p>
+                ${activity ? `<p class="record-extra">Apoyo desde fondo: ${formatCurrency(getPortalActivityComputedSummary(activity).fundSupportAmount)} | Excedente al fondo: ${formatCurrency(getPortalActivityComputedSummary(activity).surplusAmount)}</p>` : ""}
               </div>
               <div class="tag-row">
                 <span class="tag ${statusTagClass(computed.status)}">${getPortalActivityStatusLabel(computed.status)}</span>
@@ -1246,6 +1488,34 @@ function renderPortalAccountResult() {
           </article>
         `;
       }).join("");
+    const contributionsHtml = contributions.length === 0
+      ? ""
+      : `
+        <article class="record-card">
+          <div class="record-header">
+            <div>
+              <h3 class="record-title">Aportes al fondo comun</h3>
+              <p class="record-subtitle">Historial general del lote fuera de actividades</p>
+            </div>
+            <div class="tag-row">
+              <span class="tag success-tag">${formatCurrency(contributions.reduce((sum, contribution) => sum + Number(contribution.amount || 0), 0))}</span>
+            </div>
+          </div>
+          <div class="movement-log">
+            ${contributions.map((contribution) => `
+              <article class="movement-item">
+                <div class="movement-item-main">
+                  <div>
+                    <strong>Aporte voluntario general</strong>
+                    <p class="record-meta">${formatDate(contribution.date)}${contribution.method ? ` | ${getMethodLabel(contribution.method)}` : ""} | ${formatCurrency(contribution.amount)}</p>
+                    <p class="record-extra">${contribution.detail || "Sin detalle adicional."}</p>
+                  </div>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        </article>
+      `;
 
     return `
       <section class="panel inner-panel">
@@ -1254,14 +1524,16 @@ function renderPortalAccountResult() {
             <h3 class="record-title">${record.ubicacion.manzana} / Lote ${record.ubicacion.lote}</h3>
             <p class="record-subtitle">${record.titular.nombres} ${record.titular.apellidos}</p>
             <p class="record-meta">${record.titular.tipoDocumento} ${record.titular.numeroDocumento}</p>
-            <p class="record-extra">Referencia acumulada: ${formatCurrency(totals.suggested)} | Registrado a favor: ${formatCurrency(totals.paid)} | Devuelto: ${formatCurrency(totals.returned)} | Por regularizar: ${formatCurrency(totals.balance)}</p>
+            <p class="record-extra">Registrado a favor: ${formatCurrency(totals.paid)} | Voluntario adicional: ${formatCurrency(totals.voluntary)} | Devuelto: ${formatCurrency(totals.returned)} | Deuda formal: ${formatCurrency(totals.formalDebt)} | Actividades por coordinar: ${totals.communityPendingCount}</p>
           </div>
           <div class="tag-row">
             <span class="tag ${lotState.className}">${lotState.label}</span>
+            ${totals.communityPendingCount >= 2 ? `<span class="tag danger-tag">Reincidencia ${totals.communityPendingCount}</span>` : ""}
           </div>
         </div>
         <div class="records-list">
           ${activitiesHtml}
+          ${contributionsHtml}
         </div>
       </section>
     `;
@@ -1269,8 +1541,8 @@ function renderPortalAccountResult() {
 
   portalAccountResult.innerHTML = `
     <div class="panel notice-panel">
-      <strong>Importante:</strong> los montos mostrados aqui son referenciales para seguimiento de actividades.
-      No representan una multa automatica ni una deuda fija cerrada; cualquier regularizacion depende de lo registrado y de lo acordado por la junta.
+      <strong>Importante:</strong> las actividades comunales se muestran como seguimiento referencial y no como multa automatica.
+      Solo las cuotas formales aprobadas generan deuda acumulable; cualquier compensacion o regularizacion depende de lo registrado y de lo acordado por la junta.
     </div>
     <div class="summary">
       <article class="summary-card">
@@ -1280,10 +1552,12 @@ function renderPortalAccountResult() {
       </article>
       <article class="summary-card">
         <h4>Resumen general</h4>
-        <p>Referencia acumulada de actividades: ${formatCurrency(globalTotals.suggested)}</p>
+        <p>Deuda formal acumulada: ${formatCurrency(globalTotals.formalDebt)}</p>
         <p class="record-meta">Registrado a favor: ${formatCurrency(globalTotals.paid)}</p>
+        <p class="record-meta">Aporte voluntario adicional: ${formatCurrency(globalTotals.voluntary)}</p>
+        <p class="record-meta">Aportes al fondo comun: ${formatCurrency(voluntaryContributionTotal)}</p>
         <p class="record-meta">Devuelto: ${formatCurrency(globalTotals.returned)}</p>
-        <p class="record-meta">Monto por regularizar o coordinar: ${formatCurrency(globalTotals.balance)}</p>
+        <p class="record-meta">Actividades por coordinar: ${globalTotals.communityPendingCount}</p>
       </article>
     </div>
     <div class="records-list">
@@ -1318,6 +1592,7 @@ function resetPortalLookup(preserveMessage = false) {
 function selectFinanceRecord(activityId, switchToFinance = false) {
   selectedFinanceRecordId = activityId || null;
   selectedFinanceLotId = null;
+  movementLotSearchInput.value = "";
 
   if (switchToFinance) {
     setActiveTab("finanzas");
@@ -1342,38 +1617,42 @@ function renderFinanceDashboard() {
         accumulator.collectedAmount += summary.collectedAmount;
         accumulator.pendingLots += summary.pendingLots;
         accumulator.totalActivities += 1;
+        accumulator.formalCount += isFormalQuota(activity) ? 1 : 0;
+        accumulator.formalDebt += summary.debtAmount;
+        accumulator.communityCoordination += summary.coordinationAmount;
+        accumulator.fundSupport += summary.fundSupportAmount;
+        accumulator.activitySurplus += summary.surplusAmount;
         return accumulator;
       },
-      { targetAmount: 0, collectedAmount: 0, pendingLots: 0, totalActivities: 0 }
+      { targetAmount: 0, collectedAmount: 0, pendingLots: 0, totalActivities: 0, formalCount: 0, formalDebt: 0, communityCoordination: 0, fundSupport: 0, activitySurplus: 0 }
     );
-    const missingAmount = Math.max(globalSummary.targetAmount - globalSummary.collectedAmount, 0);
     financeDashboard.innerHTML = `
       <article class="finance-card">
-        <h3>Actividades</h3>
-        <p>Total de actividades comunales registradas</p>
+        <h3>Registros monetarios</h3>
+        <p>Total de actividades y cuotas registradas</p>
         <span class="finance-amount">${globalSummary.totalActivities}</span>
       </article>
       <article class="finance-card">
-        <h3>Meta acumulada</h3>
-        <p>Total esperado entre actividades</p>
-        <span class="finance-amount">${formatCurrency(globalSummary.targetAmount)}</span>
+        <h3>Apoyo del fondo</h3>
+        <p>Monto transferido desde emergencias a actividades</p>
+        <span class="finance-amount">${formatCurrency(globalSummary.fundSupport)}</span>
       </article>
       <article class="finance-card">
-        <h3>Recaudado</h3>
-        <p>Dinero efectivamente reunido</p>
-        <span class="finance-amount">${formatCurrency(globalSummary.collectedAmount)}</span>
+        <h3>Deuda formal</h3>
+        <p>Monto pendiente en cuotas formales</p>
+        <span class="finance-amount">${formatCurrency(globalSummary.formalDebt)}</span>
       </article>
       <article class="finance-card">
-        <h3>Faltante</h3>
-        <p>Monto que aun falta alcanzar</p>
-        <span class="finance-amount">${formatCurrency(missingAmount)}</span>
+        <h3>Excedente al fondo</h3>
+        <p>Sobrante automatico de actividades completadas</p>
+        <span class="finance-amount">${formatCurrency(globalSummary.activitySurplus)}</span>
       </article>
     `;
     return;
   }
 
   const summary = getActivityComputedSummary(selectedActivity);
-  summary.missingAmount = Math.max(summary.targetAmount - summary.collectedAmount, 0);
+  const balanceLabel = getActivityBalanceLabel(selectedActivity);
   financeDashboard.innerHTML = `
     <article class="finance-card">
       <h3>Meta total</h3>
@@ -1386,14 +1665,14 @@ function renderFinanceDashboard() {
       <span class="finance-amount">${formatCurrency(summary.collectedAmount)}</span>
     </article>
     <article class="finance-card">
-      <h3>Falta para la meta</h3>
-      <p>Monto que aun no se cubre</p>
-      <span class="finance-amount">${formatCurrency(summary.missingAmount)}</span>
+      <h3>Apoyo del fondo</h3>
+      <p>Monto tomado del fondo comun para esta actividad</p>
+      <span class="finance-amount">${formatCurrency(summary.fundSupportAmount)}</span>
     </article>
     <article class="finance-card">
-      <h3>Lotes pendientes</h3>
-      <p>Lotes que aun requieren decision o cumplimiento</p>
-      <span class="finance-amount">${summary.pendingLots}</span>
+      <h3>${isFormalQuota(selectedActivity) ? balanceLabel : "Excedente al fondo"}</h3>
+      <p>${isFormalQuota(selectedActivity) ? "Monto que si se considera deuda pendiente." : "Sobrante que pasa automaticamente al fondo comun."}</p>
+      <span class="finance-amount">${formatCurrency(isFormalQuota(selectedActivity) ? summary.debtAmount : summary.surplusAmount)}</span>
     </article>
   `;
 }
@@ -1421,8 +1700,8 @@ function renderFinanceRecordPicker() {
   financeRecordsList.innerHTML = "";
   financeRecordsEmpty.style.display = filteredActivities.length === 0 ? "block" : "none";
   financeRecordsEmpty.textContent = activities.length === 0
-    ? "Aun no hay actividades comunales registradas."
-    : "No se encontraron actividades con ese criterio.";
+    ? "Aun no hay actividades ni cuotas registradas."
+    : "No se encontraron registros monetarios con ese criterio.";
 
   filteredActivities
     .slice()
@@ -1435,12 +1714,12 @@ function renderFinanceRecordPicker() {
       button.dataset.recordId = activity.id;
       button.innerHTML = `
         <strong>${activity.title}</strong>
-        <p class="record-subtitle">${formatDate(activity.date)} | ${humanizeValue(activity.status)}</p>
-        <p class="record-meta">Meta ${formatCurrency(activity.targetAmount)} | Recaudado ${formatCurrency(summary.collectedAmount)}</p>
+        <p class="record-subtitle">${formatDate(activity.date)} | ${getActivityKindLabel(getActivityKind(activity))} | ${humanizeValue(activity.status)}</p>
+        <p class="record-meta">Meta ${formatCurrency(activity.targetAmount)} | Recaudado ${formatCurrency(summary.collectedAmount)} | Fondo ${formatCurrency(summary.fundSupportAmount)}</p>
         <div class="tag-row">
           <span class="tag">${summary.totalLots} lote(s)</span>
           <span class="tag ${summary.pendingLots > 0 ? "warning-tag" : "success-tag"}">
-            ${summary.pendingLots > 0 ? `${summary.pendingLots} pendiente(s)` : "Sin pendientes"}
+            ${summary.pendingLots > 0 ? `${summary.pendingLots} ${isFormalQuota(activity) ? "con deuda" : "por coordinar"}` : "Sin pendientes"}
           </span>
         </div>
       `;
@@ -1451,26 +1730,26 @@ function renderFinanceRecordPicker() {
 function renderFinanceSelectedCard() {
   const activity = getSelectedFinanceRecord();
   if (!activity) {
-    financeSelectedCard.innerHTML = "<p>Selecciona una actividad desde la lista de la izquierda.</p>";
+    financeSelectedCard.innerHTML = "<p>Selecciona una actividad o cuota desde la lista de la izquierda.</p>";
     return;
   }
 
   const summary = getActivityComputedSummary(activity);
-  const missingAmount = Math.max(summary.targetAmount - summary.collectedAmount, 0);
   const progressPercent = summary.targetAmount > 0
-    ? Math.min((summary.collectedAmount / summary.targetAmount) * 100, 100)
+    ? Math.min(((summary.collectedAmount + summary.fundSupportAmount) / summary.targetAmount) * 100, 100)
     : 0;
   financeSelectedCard.innerHTML = `
     <article class="summary-card">
       <div class="record-header">
         <div>
           <h4>${activity.title}</h4>
-          <p>${formatDate(activity.date)} | ${humanizeValue(activity.status)}</p>
+          <p>${formatDate(activity.date)} | ${getActivityKindLabel(getActivityKind(activity))} | ${humanizeValue(activity.status)}</p>
           <p class="record-meta">${activity.description || "Sin detalle adicional."}</p>
+          <p class="record-meta">${getActivityScopeCopy(activity)}</p>
         </div>
         <div class="record-actions">
-          <button class="secondary-button" data-activity-action="edit" data-id="${activity.id}" type="button">Editar actividad</button>
-          <button class="ghost-button" data-activity-action="delete" data-id="${activity.id}" type="button">Eliminar actividad</button>
+          <button class="secondary-button" data-activity-action="edit" data-id="${activity.id}" type="button">Editar registro</button>
+          <button class="ghost-button" data-activity-action="delete" data-id="${activity.id}" type="button">Eliminar registro</button>
         </div>
       </div>
       <div class="activity-progress">
@@ -1482,28 +1761,98 @@ function renderFinanceSelectedCard() {
     </article>
     <article class="summary-card">
       <h4>Resumen por lote</h4>
-      <p>Aporte sugerido: ${formatCurrency(activity.suggestedPerLot)}</p>
+      <p>${getActivityContributionLabel(activity)}: ${formatCurrency(activity.suggestedPerLot)}</p>
       <p class="record-meta">Lotes con dinero: ${summary.paidLots} | Ayuda fisica: ${summary.supportLots}</p>
       <p class="record-meta">Compensados / exonerados: ${summary.compensatedLots} | Sin respuesta: ${summary.noResponseLots}</p>
-      <p class="record-meta">Faltante de meta: ${formatCurrency(missingAmount)}</p>
+      <p class="record-meta">Aporte voluntario adicional: ${formatCurrency(summary.voluntaryAmount)}</p>
+      <p class="record-meta">Apoyo desde fondo comun: ${formatCurrency(summary.fundSupportAmount)}</p>
+      <p class="record-meta">${isFormalQuota(activity) ? "Deuda formal acumulada" : "Monto por coordinar"}: ${formatCurrency(isFormalQuota(activity) ? summary.debtAmount : summary.coordinationAmount)}</p>
+      <p class="record-meta">Excedente al fondo: ${formatCurrency(summary.surplusAmount)}</p>
+      <p class="record-meta">Faltante de meta: ${formatCurrency(summary.missingAmount)}</p>
     </article>
   `;
 }
 
+function getMovementLotSearchText(activityLot, computed) {
+  const record = getRecordById(activityLot.recordId);
+  return [
+    activityLot.recordSnapshot?.manzana,
+    activityLot.recordSnapshot?.lote,
+    `${activityLot.recordSnapshot?.manzana || ""}/lote ${activityLot.recordSnapshot?.lote || ""}`,
+    activityLot.recordSnapshot?.titular,
+    activityLot.recordSnapshot?.documento,
+    record?.titular?.numeroDocumento,
+    record?.contacto?.celularPrincipal,
+    record?.contacto?.celularAlterno,
+    humanizeValue(computed.status)
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getMovementLotOptionLabel(activityLot, computed) {
+  const record = getRecordById(activityLot.recordId);
+  const documentLabel = record
+    ? `${record.titular.tipoDocumento} ${record.titular.numeroDocumento}`
+    : (activityLot.recordSnapshot?.documento || "sin documento");
+  const phone = record?.contacto?.celularPrincipal || "sin celular";
+  return `${activityLot.recordSnapshot?.manzana || ""}/Lote ${activityLot.recordSnapshot?.lote || ""} - ${activityLot.recordSnapshot?.titular || "Sin titular"} - ${documentLabel} - Cel ${phone} - ${humanizeValue(computed.status)}`;
+}
+
 function renderPaymentChargeOptions(selectedValue = "") {
   const activity = getSelectedFinanceRecord();
-  const activityLots = activity ? getActivityLots(activity.id) : [];
-  movementLotSelect.innerHTML = `<option value="">${activityLots.length === 0 ? "Primero selecciona una actividad" : "Selecciona un lote participante"}</option>`;
-
-  activityLots.forEach((activityLot) => {
+  const allActivityLots = activity ? getActivityLots(activity.id) : [];
+  const effectiveSelectedValue = selectedValue || selectedFinanceLotId || movementLotSelect.value || "";
+  const searchTerm = movementLotSearchInput.value.trim().toLowerCase();
+  const activityLots = allActivityLots.filter((activityLot) => {
     const computed = getActivityLotComputedState(activityLot);
-    const option = document.createElement("option");
-    option.value = activityLot.id;
-    option.textContent = `${activityLot.recordSnapshot?.manzana || ""}/Lote ${activityLot.recordSnapshot?.lote || ""} - ${activityLot.recordSnapshot?.titular || "Sin titular"} - ${humanizeValue(computed.status)} - saldo ${formatCurrency(computed.remainingAmount)}`;
-    movementLotSelect.appendChild(option);
+    if (!searchTerm) {
+      return true;
+    }
+    if (activityLot.id === effectiveSelectedValue) {
+      return true;
+    }
+    return getMovementLotSearchText(activityLot, computed).includes(searchTerm);
   });
 
-  movementLotSelect.value = selectedValue || "";
+  const placeholder = !activity
+    ? "Primero selecciona una actividad o cuota"
+    : activityLots.length === 0
+      ? "No se encontraron lotes con ese criterio"
+      : "Selecciona un lote participante";
+  movementLotSelect.innerHTML = `<option value="">${placeholder}</option>`;
+  movementLotSearchInput.disabled = !activity || allActivityLots.length === 0;
+  movementLotSelect.disabled = !activity || activityLots.length === 0;
+
+  activityLots
+    .slice()
+    .sort((a, b) => {
+      const left = `${a.recordSnapshot?.manzana || ""}-${a.recordSnapshot?.lote || ""}`;
+      const right = `${b.recordSnapshot?.manzana || ""}-${b.recordSnapshot?.lote || ""}`;
+      return left > right ? 1 : -1;
+    })
+    .forEach((activityLot) => {
+      const computed = getActivityLotComputedState(activityLot);
+      const option = document.createElement("option");
+      option.value = activityLot.id;
+      option.textContent = getMovementLotOptionLabel(activityLot, computed);
+      movementLotSelect.appendChild(option);
+    });
+
+  movementLotSelect.value = activityLots.some((activityLot) => activityLot.id === effectiveSelectedValue)
+    ? effectiveSelectedValue
+    : "";
+
+  if (movementLotSearchHelp) {
+    if (!activity) {
+      movementLotSearchHelp.textContent = "Primero selecciona una actividad o cuota para buscar entre sus lotes.";
+    } else if (!searchTerm) {
+      movementLotSearchHelp.textContent = `${allActivityLots.length} lote(s) disponibles. Puedes buscar por nombre, DNI, celular, manzana o lote.`;
+    } else {
+      movementLotSearchHelp.textContent = `${activityLots.length} resultado(s) para "${movementLotSearchInput.value.trim()}".`;
+    }
+  }
 }
 
 function populateManzanas() {
@@ -1702,9 +2051,14 @@ function renderRecords() {
 
   records.forEach((record) => {
     const financeSummary = getFinanceSummaryForSocio(record.id);
-    const debtTag = financeSummary.balance > 0
-      ? `<span class="tag warning-tag">Pendiente en actividades ${formatCurrency(financeSummary.balance)}</span>`
-      : `<span class="tag success-tag">Sin pendientes</span>`;
+    const debtTag = financeSummary.formalDebt > 0
+      ? `<span class="tag warning-tag">Cuota pendiente ${formatCurrency(financeSummary.formalDebt)}</span>`
+      : `<span class="tag success-tag">Sin deuda formal</span>`;
+    const participationTag = financeSummary.communityPendingCount >= 2 || financeSummary.communityNoResponseCount >= 2
+      ? `<span class="tag danger-tag">Reincidencia en actividades ${financeSummary.communityPendingCount}</span>`
+      : financeSummary.communityPendingCount === 1
+        ? `<span class="tag warning-tag">1 actividad por coordinar</span>`
+        : "";
     const card = document.createElement("article");
     card.className = "record-card";
     card.innerHTML = `
@@ -1725,6 +2079,7 @@ function renderRecords() {
         <span class="tag">${record.cotitulares.length} cotitular(es)</span>
         <span class="tag">${record.titular.estadoSocio}</span>
         ${debtTag}
+        ${participationTag}
       </div>
       ${record.observaciones ? `<p class="record-extra">${record.observaciones}</p>` : ""}
     `;
@@ -1806,6 +2161,82 @@ function getAssemblyById(assemblyId) {
   return getGovernanceData().assemblies.find((assembly) => assembly.id === assemblyId) || null;
 }
 
+function buildActivityEmergencySurplusEntries(activities, getSummary) {
+  return activities
+    .map((activity) => {
+      const summary = getSummary(activity);
+      return summary.surplusAmount > 0
+        ? {
+            id: `surplus-${activity.id}`,
+            activityId: activity.id,
+            type: "excedente_actividad",
+            amount: summary.surplusAmount,
+            date: activity.updatedAt || activity.createdAt || activity.date,
+            detail: `Excedente automatico transferido desde ${activity.title}.`,
+            activitySnapshot: {
+              title: activity.title,
+              date: activity.date
+            }
+          }
+        : null;
+    })
+    .filter(Boolean);
+}
+
+function getVoluntaryFundSummary() {
+  const treasury = getTreasuryData();
+  const activitySurplusEntries = buildActivityEmergencySurplusEntries(getFinanceData().activities, getActivityComputedSummary);
+  const directContributions = treasury.voluntaryContributions.reduce((sum, contribution) => sum + Number(contribution.amount || 0), 0);
+  const activitySurplus = activitySurplusEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+  const emergencyAllocations = treasury.voluntaryAllocations
+    .filter((allocation) => allocation.type === "emergencia")
+    .reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0);
+  const activitySupportAllocations = treasury.voluntaryAllocations
+    .filter((allocation) => allocation.type === "apoyo_actividad")
+    .reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0);
+  const totalAllocated = emergencyAllocations + activitySupportAllocations;
+  return {
+    directContributions,
+    activitySurplus,
+    totalAvailable: directContributions + activitySurplus,
+    emergencyAllocations,
+    activitySupportAllocations,
+    totalAllocated,
+    balance: Math.max(directContributions + activitySurplus - totalAllocated, 0),
+    contributionCount: treasury.voluntaryContributions.length,
+    allocationCount: treasury.voluntaryAllocations.length,
+    activitySurplusEntries
+  };
+}
+
+function getPortalVoluntaryFundSummary() {
+  const treasury = getPortalTreasuryData();
+  const voluntaryContributions = Array.isArray(treasury?.voluntaryContributions) ? treasury.voluntaryContributions : [];
+  const voluntaryAllocations = Array.isArray(treasury?.voluntaryAllocations) ? treasury.voluntaryAllocations : [];
+  const activitySurplusEntries = buildActivityEmergencySurplusEntries(getPortalFinanceData().activities, getPortalActivityComputedSummary);
+  const directContributions = voluntaryContributions.reduce((sum, contribution) => sum + Number(contribution.amount || 0), 0);
+  const activitySurplus = activitySurplusEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+  const emergencyAllocations = voluntaryAllocations
+    .filter((allocation) => allocation.type === "emergencia")
+    .reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0);
+  const activitySupportAllocations = voluntaryAllocations
+    .filter((allocation) => allocation.type === "apoyo_actividad")
+    .reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0);
+  const totalAllocated = emergencyAllocations + activitySupportAllocations;
+  return {
+    directContributions,
+    activitySurplus,
+    totalAvailable: directContributions + activitySurplus,
+    emergencyAllocations,
+    activitySupportAllocations,
+    totalAllocated,
+    balance: Math.max(directContributions + activitySurplus - totalAllocated, 0),
+    contributionCount: voluntaryContributions.length,
+    allocationCount: voluntaryAllocations.length,
+    activitySurplusEntries
+  };
+}
+
 function renderExpenseRecordOptions(selectedValue = "") {
   const records = getRecords();
   expenseRelatedRecordSelect.innerHTML = '<option value="">Sin socio relacionado</option>';
@@ -1839,6 +2270,44 @@ function renderProviderOptions(expenseSelected = "", workOrderSelected = "") {
 
   expenseProviderSelect.value = expenseSelected || "";
   workOrderProviderSelect.value = workOrderSelected || "";
+}
+
+function renderVoluntaryContributionRecordOptions(selectedValue = "") {
+  const records = getRecords().filter((record) => record.titular.estadoSocio !== "retirado");
+  voluntaryContributionRecordSelect.innerHTML = `<option value="">${records.length === 0 ? "Primero registra un socio activo" : "Selecciona un socio o lote"}</option>`;
+
+  records.forEach((record) => {
+    const option = document.createElement("option");
+    option.value = record.id;
+    option.textContent = `${record.ubicacion.manzana}/Lote ${record.ubicacion.lote} - ${record.titular.nombres} ${record.titular.apellidos} - ${record.titular.tipoDocumento} ${record.titular.numeroDocumento}`;
+    voluntaryContributionRecordSelect.appendChild(option);
+  });
+
+  voluntaryContributionRecordSelect.value = selectedValue || "";
+}
+
+function renderVoluntaryAllocationActivityOptions(selectedValue = "") {
+  const activities = getFinanceData().activities
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  voluntaryAllocationActivitySelect.innerHTML = `<option value="">${activities.length === 0 ? "Primero registra una actividad" : "Selecciona una actividad"}</option>`;
+
+  activities.forEach((activity) => {
+    const option = document.createElement("option");
+    option.value = activity.id;
+    option.textContent = `${activity.title} - ${formatDate(activity.date)} - ${getActivityKindLabel(getActivityKind(activity))}`;
+    voluntaryAllocationActivitySelect.appendChild(option);
+  });
+
+  voluntaryAllocationActivitySelect.value = selectedValue || "";
+}
+
+function syncVoluntaryAllocationType() {
+  const requiresActivity = voluntaryAllocationTypeSelect.value === "apoyo_actividad";
+  voluntaryAllocationActivitySelect.disabled = !requiresActivity;
+  if (!requiresActivity) {
+    voluntaryAllocationActivitySelect.value = "";
+  }
 }
 
 function renderIncidentRecordOptions(selectedValue = "") {
@@ -1919,12 +2388,159 @@ function fillExpenseForm(expense) {
   document.getElementById("expense-date").value = expense.date || getTodayIso();
   document.getElementById("expense-amount").value = Number(expense.amount || 0);
   document.getElementById("expense-category").value = expense.category || "servicios";
-  document.getElementById("expense-fund").value = expense.fund || "caja";
+  document.getElementById("expense-fund").value = normalizeExpenseFund(expense.fund);
   document.getElementById("expense-cost-center").value = expense.costCenter || "";
   document.getElementById("expense-detail").value = expense.detail || "";
   renderProviderOptions(expense.providerId || "", "");
   renderExpenseRecordOptions(expense.relatedRecordId || "");
   setMessage(expenseMessage, "Editando egreso existente.", "success");
+}
+
+function resetVoluntaryContributionForm(preserveMessage = false) {
+  editingVoluntaryContributionId = null;
+  voluntaryContributionForm.reset();
+  voluntaryContributionFormTitle.textContent = "Registrar aporte voluntario general";
+  voluntaryContributionDateInput.value = getTodayIso();
+  voluntaryContributionMethodSelect.value = "efectivo";
+  renderVoluntaryContributionRecordOptions();
+  if (!preserveMessage) {
+    clearMessage(voluntaryContributionMessage);
+  }
+}
+
+function fillVoluntaryContributionForm(contribution) {
+  editingVoluntaryContributionId = contribution.id;
+  voluntaryContributionFormTitle.textContent = "Editar aporte voluntario";
+  renderVoluntaryContributionRecordOptions(contribution.recordId || "");
+  voluntaryContributionDateInput.value = contribution.date || getTodayIso();
+  voluntaryContributionAmountInput.value = Number(contribution.amount || 0);
+  voluntaryContributionMethodSelect.value = contribution.method || "efectivo";
+  voluntaryContributionDetailInput.value = contribution.detail || "";
+  setMessage(voluntaryContributionMessage, "Editando aporte voluntario general.", "success");
+}
+
+function resetVoluntaryAllocationForm(preserveMessage = false) {
+  editingVoluntaryAllocationId = null;
+  voluntaryAllocationForm.reset();
+  voluntaryAllocationFormTitle.textContent = "Usar fondo comun";
+  voluntaryAllocationTypeSelect.value = "emergencia";
+  voluntaryAllocationDateInput.value = getTodayIso();
+  renderVoluntaryAllocationActivityOptions();
+  voluntaryAllocationActivitySelect.disabled = true;
+  if (!preserveMessage) {
+    clearMessage(voluntaryAllocationMessage);
+  }
+}
+
+function fillVoluntaryAllocationForm(allocation) {
+  editingVoluntaryAllocationId = allocation.id;
+  voluntaryAllocationFormTitle.textContent = "Editar uso del fondo";
+  voluntaryAllocationTypeSelect.value = allocation.type || "emergencia";
+  voluntaryAllocationDateInput.value = allocation.date || getTodayIso();
+  renderVoluntaryAllocationActivityOptions(allocation.activityId || "");
+  voluntaryAllocationActivitySelect.disabled = allocation.type !== "apoyo_actividad";
+  voluntaryAllocationAmountInput.value = Number(allocation.amount || 0);
+  voluntaryAllocationDetailInput.value = allocation.detail || "";
+  setMessage(voluntaryAllocationMessage, "Editando uso del fondo comun.", "success");
+}
+
+function renderVoluntaryFundDashboard() {
+  const summary = getVoluntaryFundSummary();
+  voluntaryFundDashboard.innerHTML = `
+    <article class="finance-card">
+      <h3>Saldo disponible</h3>
+      <p>Fondo actual para emergencias y apoyo</p>
+      <span class="finance-amount">${formatCurrency(summary.balance)}</span>
+    </article>
+    <article class="finance-card">
+      <h3>Aportes directos</h3>
+      <p>Ingresos voluntarios generales registrados</p>
+      <span class="finance-amount">${formatCurrency(summary.directContributions)}</span>
+    </article>
+    <article class="finance-card">
+      <h3>Excedente de actividades</h3>
+      <p>Sobrante transferido automaticamente al fondo</p>
+      <span class="finance-amount">${formatCurrency(summary.activitySurplus)}</span>
+    </article>
+    <article class="finance-card">
+      <h3>Usos del fondo</h3>
+      <p>Emergencias y apoyos a actividades registrados</p>
+      <span class="finance-amount">${formatCurrency(summary.totalAllocated)}</span>
+    </article>
+  `;
+}
+
+function renderVoluntaryContributions() {
+  const treasury = getTreasuryData();
+  voluntaryContributionsList.innerHTML = "";
+  voluntaryContributionsEmpty.style.display = treasury.voluntaryContributions.length === 0 ? "block" : "none";
+
+  treasury.voluntaryContributions
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .forEach((contribution) => {
+      const card = document.createElement("article");
+      card.className = "record-card";
+      card.innerHTML = `
+        <div class="record-header">
+          <div>
+            <h3 class="record-title">${contribution.recordSnapshot?.titular || "Socio no encontrado"}</h3>
+            <p class="record-subtitle">${contribution.recordSnapshot?.manzana || ""} / Lote ${contribution.recordSnapshot?.lote || ""}</p>
+            <p class="record-meta">${contribution.recordSnapshot?.documento || "Sin documento"}${contribution.method ? ` | ${getMethodLabel(contribution.method)}` : ""}</p>
+            <p class="record-extra">${contribution.detail || "Aporte voluntario general para fondo comun."}</p>
+          </div>
+          <div class="record-actions">
+            <button class="secondary-button" data-voluntary-contribution-action="edit" data-id="${contribution.id}" type="button">Editar</button>
+            <button class="ghost-button" data-voluntary-contribution-action="delete" data-id="${contribution.id}" type="button">Eliminar</button>
+          </div>
+        </div>
+        <div class="tag-row">
+          <span class="tag">${formatDate(contribution.date)}</span>
+          <span class="tag success-tag">${formatCurrency(contribution.amount)}</span>
+        </div>
+      `;
+      voluntaryContributionsList.appendChild(card);
+    });
+}
+
+function renderVoluntaryAllocations() {
+  const treasury = getTreasuryData();
+  const derivedSurplus = getVoluntaryFundSummary().activitySurplusEntries;
+  const manualAllocations = treasury.voluntaryAllocations
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  const entries = [
+    ...derivedSurplus.map((entry) => ({ ...entry, derived: true })),
+    ...manualAllocations.map((entry) => ({ ...entry, derived: false }))
+  ].sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
+
+  voluntaryAllocationsList.innerHTML = "";
+  voluntaryAllocationsEmpty.style.display = entries.length === 0 ? "block" : "none";
+
+  entries.forEach((allocation) => {
+    const activity = allocation.activityId ? getActivityById(allocation.activityId) : null;
+    const card = document.createElement("article");
+    card.className = "record-card";
+    card.innerHTML = `
+      <div class="record-header">
+        <div>
+          <h3 class="record-title">${allocation.type === "apoyo_actividad" || allocation.type === "excedente_actividad" ? (activity?.title || allocation.activitySnapshot?.title || "Actividad") : "Fondo comun"}</h3>
+          <p class="record-subtitle">${allocation.type === "apoyo_actividad" ? "Apoyo a actividad" : allocation.type === "excedente_actividad" ? "Excedente automatico de actividad" : "Uso por emergencia o gasto general"}</p>
+          <p class="record-meta">${formatDate(allocation.date)}${allocation.activitySnapshot?.date ? ` | ${formatDate(allocation.activitySnapshot.date)}` : ""}</p>
+          <p class="record-extra">${allocation.detail || "Sin detalle adicional."}</p>
+        </div>
+        <div class="record-actions">
+          ${allocation.derived ? "" : `<button class="secondary-button" data-voluntary-allocation-action="edit" data-id="${allocation.id}" type="button">Editar</button>`}
+          ${allocation.derived ? "" : `<button class="ghost-button" data-voluntary-allocation-action="delete" data-id="${allocation.id}" type="button">Eliminar</button>`}
+        </div>
+      </div>
+      <div class="tag-row">
+        <span class="tag ${allocation.derived ? "success-tag" : "warning-tag"}">${allocation.derived ? "Ingreso automatico al fondo" : "Salida del fondo"}</span>
+        <span class="tag ${allocation.derived ? "success-tag" : "warning-tag"}">${formatCurrency(allocation.amount)}</span>
+      </div>
+    `;
+    voluntaryAllocationsList.appendChild(card);
+  });
 }
 
 function resetIncidentForm(preserveMessage = false) {
@@ -2037,12 +2653,9 @@ function fillDocumentForm(documentRecord) {
 
 function renderTreasuryDashboard() {
   const treasury = getTreasuryData();
+  const voluntaryFund = getVoluntaryFundSummary();
   const totalExpenses = treasury.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-  const cashExpenses = treasury.expenses
-    .filter((expense) => expense.fund === "caja")
-    .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-  const bankExpenses = treasury.expenses
-    .filter((expense) => expense.fund === "banco")
+  const pettyCashExpenses = treasury.expenses
     .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const activeProviders = treasury.providers.filter((provider) => provider.status === "activo").length;
 
@@ -2053,14 +2666,14 @@ function renderTreasuryDashboard() {
       <span class="finance-amount">${formatCurrency(totalExpenses)}</span>
     </article>
     <article class="finance-card">
-      <h3>Desde caja</h3>
+      <h3>Desde caja chica</h3>
       <p>Salidas registradas en efectivo</p>
-      <span class="finance-amount">${formatCurrency(cashExpenses)}</span>
+      <span class="finance-amount">${formatCurrency(pettyCashExpenses)}</span>
     </article>
     <article class="finance-card">
-      <h3>Desde banco</h3>
-      <p>Salidas registradas por cuenta bancaria</p>
-      <span class="finance-amount">${formatCurrency(bankExpenses)}</span>
+      <h3>Fondo comun</h3>
+      <p>Saldo disponible entre aportes voluntarios y excedentes</p>
+      <span class="finance-amount">${formatCurrency(voluntaryFund.balance)}</span>
     </article>
     <article class="finance-card">
       <h3>Proveedores activos</h3>
@@ -2117,7 +2730,7 @@ function renderExpenses() {
           <div>
             <h3 class="record-title">${expense.detail || humanizeValue(expense.category)}</h3>
             <p class="record-subtitle">${formatDate(expense.date)} | ${humanizeValue(expense.category)}</p>
-            <p class="record-meta">${provider ? provider.name : "Sin proveedor"} | ${humanizeValue(expense.fund)}</p>
+            <p class="record-meta">${provider ? provider.name : "Sin proveedor"} | ${getExpenseFundLabel(expense.fund)}</p>
             <p class="record-extra">${expense.costCenter || "Sin centro de costo"}${relatedRecord ? ` | ${getRecordLabel(relatedRecord)}` : ""}</p>
           </div>
           <div class="record-actions">
@@ -2418,6 +3031,7 @@ function renderReportsPanel() {
   const records = getRecords();
   const finance = getFinanceData();
   const treasury = getTreasuryData();
+  const voluntaryFund = getVoluntaryFundSummary();
   const incidentsData = getIncidentsData();
   const governance = getGovernanceData();
   const financeSummary = finance.activities.reduce(
@@ -2427,11 +3041,17 @@ function renderReportsPanel() {
       accumulator.collected += summary.collectedAmount;
       accumulator.pendingLots += summary.pendingLots;
       accumulator.activities += 1;
+      accumulator.formalCount += isFormalQuota(activity) ? 1 : 0;
+      accumulator.formalDebt += summary.debtAmount;
+      accumulator.communityCoordination += summary.coordinationAmount;
       return accumulator;
     },
-    { target: 0, collected: 0, pendingLots: 0, activities: 0 }
+    { target: 0, collected: 0, pendingLots: 0, activities: 0, formalCount: 0, formalDebt: 0, communityCoordination: 0 }
   );
-  const totalPendingFinance = Math.max(financeSummary.target - financeSummary.collected, 0);
+  const recurrentLots = records.filter((record) => {
+    const summary = getFinanceSummaryForSocio(record.id);
+    return summary.communityPendingCount >= 2 || summary.communityNoResponseCount >= 2;
+  }).length;
   const pendingAgreements = governance.agreements.filter((agreement) => !["cumplido", "cerrado"].includes(agreement.status)).length;
   const openIncidents = incidentsData.incidents.filter((incident) => !["resuelta", "cerrada"].includes(incident.status)).length;
 
@@ -2442,44 +3062,44 @@ function renderReportsPanel() {
       <span class="superadmin-value">${records.length}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Falta para metas</h3>
-      <p>Monto aun no cubierto en actividades</p>
-      <span class="superadmin-value">${formatCurrency(totalPendingFinance)}</span>
+      <h3>Deuda formal</h3>
+      <p>Monto pendiente solo en cuotas formales</p>
+      <span class="superadmin-value">${formatCurrency(financeSummary.formalDebt)}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Egresos</h3>
-      <p>Total registrado en tesoreria</p>
-      <span class="superadmin-value">${formatCurrency(treasury.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0))}</span>
+      <h3>Por coordinar</h3>
+      <p>Monto referencial pendiente en actividades comunales</p>
+      <span class="superadmin-value">${formatCurrency(financeSummary.communityCoordination)}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Incidencias abiertas</h3>
-      <p>Casos y acuerdos pendientes</p>
-      <span class="superadmin-value">${openIncidents + pendingAgreements}</span>
+      <h3>Fondo comun</h3>
+      <p>Saldo disponible entre aportes y excedentes</p>
+      <span class="superadmin-value">${formatCurrency(voluntaryFund.balance)}</span>
     </article>
   `;
 
   reportsBreakdown.innerHTML = `
     <article class="record-card">
       <h3 class="record-title">Finanzas</h3>
-      <p class="record-extra">${financeSummary.activities} actividades, ${finance.activityMovements.length} movimientos y ${financeSummary.pendingLots} lote(s) pendientes.</p>
+      <p class="record-extra">${financeSummary.activities} registros, ${financeSummary.formalCount} cuota(s) formales, ${finance.activityMovements.length} movimientos y ${financeSummary.pendingLots} lote(s) aun por regularizar.</p>
     </article>
     <article class="record-card">
       <h3 class="record-title">Tesoreria</h3>
-      <p class="record-extra">${treasury.providers.length} proveedores y ${treasury.expenses.length} egresos registrados.</p>
+      <p class="record-extra">${treasury.providers.length} proveedores, ${treasury.expenses.length} egresos, ${treasury.voluntaryContributions.length} aportes al fondo y saldo disponible de ${formatCurrency(voluntaryFund.balance)}.</p>
     </article>
     <article class="record-card">
       <h3 class="record-title">Incidencias</h3>
       <p class="record-extra">${incidentsData.incidents.length} incidencias y ${incidentsData.workOrders.length} ordenes de trabajo registradas.</p>
     </article>
     <article class="record-card">
-      <h3 class="record-title">Asambleas</h3>
-      <p class="record-extra">${governance.assemblies.length} asambleas, ${governance.agreements.length} acuerdos y ${governance.documents.length} documentos registrados.</p>
+      <h3 class="record-title">Seguimiento</h3>
+      <p class="record-extra">${openIncidents + pendingAgreements} caso(s) abiertos, ${recurrentLots} lote(s) en reincidencia comunitaria y ${voluntaryFund.activitySurplusEntries.length} actividad(es) con excedente automatico al fondo.</p>
     </article>
   `;
 
   const activities = buildRecentActivity();
   reportsActivity.innerHTML = activities.length === 0
-    ? '<div class="empty-state">Aun no hay actividad registrada en esta demo.</div>'
+    ? '<div class="empty-state">Aun no hay movimientos registrados en esta demo.</div>'
     : "";
 
   activities.forEach((activity) => {
@@ -2504,9 +3124,11 @@ function renderReportsPanel() {
 function resetChargeForm(preserveMessage = false) {
   editingFinanceActivityId = null;
   activityForm.reset();
-  activityFormTitle.textContent = "Nueva actividad comunal";
+  activityFormTitle.textContent = "Nuevo registro monetario";
+  activityKindInput.value = "actividad_comunal";
   activityDateInput.value = getTodayIso();
   activityStatusInput.value = "abierta";
+  activitySuggestedInput.value = "";
   updateSuggestedPerLotField();
   if (!preserveMessage) {
     clearMessage(activityMessage);
@@ -2515,14 +3137,14 @@ function resetChargeForm(preserveMessage = false) {
 
 function gatherChargeData() {
   const currentUser = getCurrentUser();
-  const { suggestedAmount } = calculateSuggestedPerLot(activityTargetInput.value);
   return {
     id: editingFinanceActivityId || generateId(),
+    kind: activityKindInput.value || "actividad_comunal",
     title: activityTitleInput.value.trim(),
     description: activityDescriptionInput.value.trim(),
     date: activityDateInput.value,
     targetAmount: Number(activityTargetInput.value || 0),
-    suggestedPerLot: suggestedAmount,
+    suggestedPerLot: Number(activitySuggestedInput.value || 0),
     status: activityStatusInput.value,
     updatedAt: new Date().toISOString(),
     createdBy: currentUser ? currentUser.username : "sistema"
@@ -2531,19 +3153,25 @@ function gatherChargeData() {
 
 function validateChargeData(activity) {
   if (!activity.title) {
-    return "Debes escribir el nombre de la actividad.";
+    return "Debes escribir el nombre del registro.";
   }
 
   if (!activity.date) {
-    return "La fecha de la actividad es obligatoria.";
+    return "La fecha del registro es obligatoria.";
   }
 
   if (!activity.targetAmount || activity.targetAmount <= 0) {
-    return "La meta total debe ser mayor a cero.";
+    return isFormalQuota(activity)
+      ? "La cuota total debe ser mayor a cero."
+      : "La meta total debe ser mayor a cero.";
+  }
+
+  if (!activity.suggestedPerLot || activity.suggestedPerLot <= 0) {
+    return "Debes definir un monto sugerido por lote mayor a cero.";
   }
 
   if (getActiveActivityParticipants().length === 0) {
-    return "Primero registra al menos un socio/lote activo para calcular el aporte sugerido.";
+    return "Primero registra al menos un socio/lote activo para calcular la referencia por lote.";
   }
 
   return "";
@@ -2551,19 +3179,22 @@ function validateChargeData(activity) {
 
 function fillChargeForm(activity) {
   editingFinanceActivityId = activity.id;
-  activityFormTitle.textContent = `Editar actividad: ${activity.title}`;
+  activityFormTitle.textContent = `Editar registro: ${activity.title}`;
+  activityKindInput.value = getActivityKind(activity);
   activityTitleInput.value = activity.title;
   activityDescriptionInput.value = activity.description || "";
   activityDateInput.value = activity.date || getTodayIso();
   activityTargetInput.value = Number(activity.targetAmount || 0);
+  activitySuggestedInput.value = Number(activity.suggestedPerLot || 0) > 0 ? Number(activity.suggestedPerLot || 0).toFixed(2) : "";
   activityStatusInput.value = activity.status || "abierta";
   updateSuggestedPerLotField();
-  setMessage(activityMessage, "Editando actividad comunal existente.", "success");
+  setMessage(activityMessage, "Editando un registro monetario existente.", "success");
 }
 
 function syncMovementFormWithSelectedLot() {
   const activityLot = getActivityLotById(movementLotSelect.value);
   if (!activityLot) {
+    movementAmountInput.value = "";
     return;
   }
 
@@ -2572,6 +3203,8 @@ function syncMovementFormWithSelectedLot() {
 
   if (movementType === "aporte_dinero" || movementType === "compensacion_aprobada") {
     movementAmountInput.value = computed.remainingAmount > 0 ? computed.remainingAmount.toFixed(2) : "";
+  } else if (movementType === "aporte_voluntario") {
+    movementAmountInput.value = "";
   } else if (movementType === "devolucion") {
     movementAmountInput.value = computed.maxRefundableAmount > 0 ? computed.maxRefundableAmount.toFixed(2) : "";
   } else if (movementType === "exoneracion") {
@@ -2636,13 +3269,33 @@ function fillMovementForm(movement, action = "edit") {
   setMessage(movementMessage, "Editando movimiento existente.", "success");
 }
 
+function buildMovementPayload({ activityLot, type, amount, date, method, detail, currentUser }) {
+  return {
+    activityId: activityLot.activityId,
+    activityLotId: activityLot.id,
+    type,
+    amount,
+    date,
+    method,
+    detail,
+    status: "activo",
+    activityLotSnapshot: {
+      titular: activityLot.recordSnapshot?.titular,
+      manzana: activityLot.recordSnapshot?.manzana,
+      lote: activityLot.recordSnapshot?.lote
+    },
+    updatedAt: new Date().toISOString(),
+    updatedBy: currentUser ? currentUser.username : "sistema"
+  };
+}
+
 function renderCharges() {
   const activity = getSelectedFinanceRecord();
   chargesList.innerHTML = "";
 
   if (!activity) {
     chargesEmpty.style.display = "block";
-    chargesEmpty.textContent = "Selecciona una actividad para ver sus lotes participantes.";
+    chargesEmpty.textContent = "Selecciona una actividad o cuota para ver sus lotes participantes.";
     return;
   }
 
@@ -2680,6 +3333,9 @@ function renderCharges() {
 
   activityLots.forEach((activityLot) => {
     const computed = getActivityLotComputedState(activityLot);
+    const profile = getFinanceSummaryForSocio(activityLot.recordId);
+    const contributionLabel = getActivityContributionLabel(activity);
+    const balanceLabel = getActivityBalanceLabel(activity);
     const movementsHtml = computed.movements.length > 0
       ? `
         <div class="movement-log">
@@ -2698,7 +3354,7 @@ function renderCharges() {
               <div class="movement-actions">
                 ${movement.status === "anulado" ? "" : `
                   <button class="secondary-button" data-movement-action="edit" data-id="${movement.id}" type="button">Editar</button>
-                  ${movement.type === "aporte_dinero" ? `<button class="primary-button" data-movement-action="refund" data-id="${movement.id}" type="button">Devolucion</button>` : ""}
+                  ${["aporte_dinero", "aporte_voluntario"].includes(movement.type) ? `<button class="primary-button" data-movement-action="refund" data-id="${movement.id}" type="button">Devolucion</button>` : ""}
                   <button class="ghost-button" data-movement-action="annul" data-id="${movement.id}" type="button">Anular</button>
                 `}
                 <button class="ghost-button" data-movement-action="delete" data-id="${movement.id}" type="button">Eliminar</button>
@@ -2716,16 +3372,18 @@ function renderCharges() {
           <h3 class="record-title">${activityLot.recordSnapshot?.manzana || ""} - Lote ${activityLot.recordSnapshot?.lote || ""}</h3>
           <p class="record-subtitle">${activityLot.recordSnapshot?.titular || "Sin titular"} </p>
           <p class="record-meta">${activityLot.recordSnapshot?.documento || "Sin documento"}</p>
-          <p class="record-extra">Aporte sugerido: ${formatCurrency(activityLot.suggestedAmount)} | Dinero neto: ${formatCurrency(computed.moneyAmount)} | Devuelto: ${formatCurrency(computed.returnedAmount)} | Compensado por junta: ${formatCurrency(computed.approvedCompensation)} | Saldo: ${formatCurrency(computed.remainingAmount)}</p>
+          <p class="record-extra">${contributionLabel}: ${formatCurrency(activityLot.suggestedAmount)} | Dinero neto: ${formatCurrency(computed.moneyAmount)} | Voluntario adicional: ${formatCurrency(computed.voluntaryAmount)} | Devuelto: ${formatCurrency(computed.returnedAmount)} | Compensado por junta: ${formatCurrency(computed.approvedCompensation)} | ${balanceLabel}: ${formatCurrency(computed.remainingAmount)}</p>
         </div>
         <div class="record-actions">
           <button class="primary-button" data-charge-action="move" data-id="${activityLot.id}" type="button">Registrar movimiento</button>
         </div>
       </div>
       <div class="tag-row">
+        <span class="tag">${getActivityKindLabel(getActivityKind(activity))}</span>
         <span class="tag ${statusTagClass(computed.status)}">${humanizeValue(computed.status)}</span>
         ${computed.hasPhysicalSupport ? '<span class="tag">Ayuda fisica</span>' : ""}
         ${computed.noResponseMarked ? '<span class="tag danger-tag">Sin respuesta</span>' : ""}
+        ${!isFormalQuota(activity) && (profile.communityPendingCount >= 2 || profile.communityNoResponseCount >= 2) ? `<span class="tag danger-tag">Reincidente ${profile.communityPendingCount}</span>` : ""}
       </div>
       ${movementsHtml}
     `;
@@ -2811,7 +3469,7 @@ function buildRecentActivity() {
     activities.push({
       at: activity.updatedAt || activity.createdAt,
       title: activity.title,
-      detail: `Actividad ${humanizeValue(activity.status)} con meta ${formatCurrency(activity.targetAmount)}`,
+      detail: `${getActivityKindLabel(getActivityKind(activity))} ${humanizeValue(activity.status)} con meta ${formatCurrency(activity.targetAmount)}`,
       tag: "Actividades"
     });
   });
@@ -2839,8 +3497,35 @@ function buildRecentActivity() {
     activities.push({
       at: expense.updatedAt || expense.createdAt,
       title: expense.detail || humanizeValue(expense.category),
-      detail: `Egreso por ${formatCurrency(expense.amount)} desde ${humanizeValue(expense.fund)}`,
+      detail: `Egreso por ${formatCurrency(expense.amount)} desde ${getExpenseFundLabel(expense.fund)}`,
       tag: "Egresos"
+    });
+  });
+
+  treasury.voluntaryContributions.forEach((contribution) => {
+    activities.push({
+      at: contribution.updatedAt || contribution.createdAt,
+      title: contribution.recordSnapshot?.titular || "Aporte voluntario",
+      detail: `Ingreso al fondo comun por ${formatCurrency(contribution.amount)}`,
+      tag: "Fondo comun"
+    });
+  });
+
+  treasury.voluntaryAllocations.forEach((allocation) => {
+    activities.push({
+      at: allocation.updatedAt || allocation.createdAt,
+      title: allocation.type === "apoyo_actividad" ? "Apoyo a actividad" : "Uso del fondo",
+      detail: `${allocation.activitySnapshot?.title || allocation.detail || "Fondo comun"} por ${formatCurrency(allocation.amount)}`,
+      tag: "Fondo comun"
+    });
+  });
+
+  getVoluntaryFundSummary().activitySurplusEntries.forEach((entry) => {
+    activities.push({
+      at: entry.date,
+      title: entry.activitySnapshot?.title || "Excedente de actividad",
+      detail: `Excedente automatico al fondo por ${formatCurrency(entry.amount)}`,
+      tag: "Fondo comun"
     });
   });
 
@@ -2916,20 +3601,19 @@ function renderSuperAdminPanel() {
   const accounts = getAccounts();
   const finance = getFinanceData();
   const treasury = getTreasuryData();
+  const voluntaryFund = getVoluntaryFundSummary();
   const incidentsData = getIncidentsData();
   const governance = getGovernanceData();
   const activeDirectivos = accounts.filter((account) => account.role !== "superadmin" && account.active).length;
   const financeTotals = finance.activities.reduce(
     (accumulator, activity) => {
       const summary = getActivityComputedSummary(activity);
-      accumulator.target += summary.targetAmount;
-      accumulator.collected += summary.collectedAmount;
       accumulator.pendingLots += summary.pendingLots;
+      accumulator.formalDebt += summary.debtAmount;
       return accumulator;
     },
-    { target: 0, collected: 0, pendingLots: 0 }
+    { pendingLots: 0, formalDebt: 0 }
   );
-  const financeMissing = Math.max(financeTotals.target - financeTotals.collected, 0);
 
   superadminOverview.innerHTML = `
     <article class="superadmin-card">
@@ -2943,9 +3627,9 @@ function renderSuperAdminPanel() {
       <span class="superadmin-value">${activeDirectivos}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Falta para metas</h3>
-      <p>Monto aun no cubierto por actividades</p>
-      <span class="superadmin-value">${formatCurrency(financeMissing)}</span>
+      <h3>Deuda formal</h3>
+      <p>Monto pendiente solo en cuotas formales</p>
+      <span class="superadmin-value">${formatCurrency(financeTotals.formalDebt)}</span>
     </article>
     <article class="superadmin-card">
       <h3>Alertas activas</h3>
@@ -2958,9 +3642,9 @@ function renderSuperAdminPanel() {
       <span class="superadmin-value">${formatCurrency(treasury.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0))}</span>
     </article>
     <article class="superadmin-card">
-      <h3>Documentos</h3>
-      <p>Archivos y comunicados registrados</p>
-      <span class="superadmin-value">${governance.documents.length}</span>
+      <h3>Fondo comun</h3>
+      <p>Saldo disponible entre aportes y excedentes</p>
+      <span class="superadmin-value">${formatCurrency(voluntaryFund.balance)}</span>
     </article>
   `;
 
@@ -2968,7 +3652,7 @@ function renderSuperAdminPanel() {
   superadminActivity.innerHTML = "";
 
   if (activities.length === 0) {
-    superadminActivity.innerHTML = '<div class="empty-state">Aun no hay actividad registrada en esta demo.</div>';
+    superadminActivity.innerHTML = '<div class="empty-state">Aun no hay movimientos registrados en esta demo.</div>';
     return;
   }
 
@@ -3002,9 +3686,15 @@ function refreshAllViews() {
   updateSuggestedPerLotField();
   renderProviderOptions();
   renderExpenseRecordOptions();
+  renderVoluntaryContributionRecordOptions();
+  renderVoluntaryAllocationActivityOptions(voluntaryAllocationActivitySelect.value);
+  syncVoluntaryAllocationType();
   renderTreasuryDashboard();
+  renderVoluntaryFundDashboard();
   renderProviders();
   renderExpenses();
+  renderVoluntaryContributions();
+  renderVoluntaryAllocations();
   renderIncidentRecordOptions();
   renderWorkOrderIncidentOptions();
   renderIncidentsDashboard();
@@ -3156,11 +3846,15 @@ superadminActionButtons.forEach((button) => {
           activityLots: [],
           activityMovements: []
         });
+        await saveTreasuryData({
+          ...getTreasuryData(),
+          voluntaryAllocations: getTreasuryData().voluntaryAllocations.filter((allocation) => allocation.type !== "apoyo_actividad")
+        });
         editingFinanceActivityId = null;
         selectedFinanceRecordId = null;
         selectedFinanceLotId = null;
         refreshAllViews();
-        setMessage(superadminMessage, "Se limpiaron todas las actividades y aportes de la demo.", "success");
+        setMessage(superadminMessage, "Se limpiaron todos los registros monetarios de la demo.", "success");
         return;
       }
 
@@ -3182,7 +3876,7 @@ superadminActionButtons.forEach((button) => {
           activityLots: [],
           activityMovements: []
         });
-        await saveTreasuryData({ providers: [], expenses: [] });
+        await saveTreasuryData({ providers: [], expenses: [], voluntaryContributions: [], voluntaryAllocations: [] });
         await saveIncidentsData({ incidents: [], workOrders: [] });
         await saveGovernanceData({ assemblies: [], agreements: [], documents: [] });
         await saveAccounts(getAccounts().filter((account) => account.protected));
@@ -3371,7 +4065,7 @@ activityForm.addEventListener("submit", (event) => {
   selectFinanceRecord(activity.id);
   refreshAllViews();
   resetChargeForm(true);
-  setMessage(activityMessage, existingIndex >= 0 ? "Actividad actualizada correctamente." : "Actividad guardada correctamente.", "success");
+  setMessage(activityMessage, existingIndex >= 0 ? "Registro monetario actualizado correctamente." : "Registro monetario guardado correctamente.", "success");
 });
 
 activityCancelButton.addEventListener("click", () => {
@@ -3397,7 +4091,7 @@ movementForm.addEventListener("submit", (event) => {
     return;
   }
 
-  if (["aporte_dinero", "compensacion_aprobada"].includes(movementType) && amount <= 0) {
+  if (["aporte_dinero", "aporte_voluntario", "compensacion_aprobada"].includes(movementType) && amount <= 0) {
     setMessage(movementMessage, "Ese tipo de movimiento requiere un monto mayor a cero.", "error");
     return;
   }
@@ -3410,11 +4104,6 @@ movementForm.addEventListener("submit", (event) => {
   }
 
   const computed = getActivityLotComputedState(activityLot, { ignoreMovementId: editingMovementId });
-  if (["aporte_dinero", "compensacion_aprobada"].includes(movementType) && amount > computed.remainingAmount) {
-    setMessage(movementMessage, `El monto no puede superar el saldo pendiente de ${formatCurrency(computed.remainingAmount)}.`, "error");
-    return;
-  }
-
   if (movementType === "devolucion" && amount <= 0) {
     setMessage(movementMessage, "La devolucion debe ser mayor a cero.", "error");
     return;
@@ -3427,23 +4116,38 @@ movementForm.addEventListener("submit", (event) => {
 
   const currentUser = getCurrentUser();
   const isEditingMovement = Boolean(editingMovementId);
-  const movementPayload = {
-    activityId: activityLot.activityId,
-    activityLotId,
+  if (movementType === "aporte_voluntario" && computed.remainingAmount > 0) {
+    setMessage(
+      movementMessage,
+      `Primero registra el aporte base pendiente de ${formatCurrency(computed.remainingAmount)}. Si deseas guardar todo junto, usa "Aporto dinero" y el sistema separara el excedente automaticamente.`,
+      "error"
+    );
+    return;
+  }
+
+  if (movementType === "compensacion_aprobada" && amount > computed.remainingAmount) {
+    setMessage(movementMessage, `La compensacion no puede superar el saldo pendiente de ${formatCurrency(computed.remainingAmount)}.`, "error");
+    return;
+  }
+
+  if (movementType === "aporte_dinero" && amount > computed.remainingAmount && isEditingMovement) {
+    setMessage(
+      movementMessage,
+      `Al editar, el aporte base no puede superar el saldo pendiente de ${formatCurrency(computed.remainingAmount)}. Si quieres registrar excedente, guarda aparte un "Aporte voluntario adicional".`,
+      "error"
+    );
+    return;
+  }
+
+  const movementPayload = buildMovementPayload({
+    activityLot,
     type: movementType,
     amount,
     date: movementDate,
     method,
     detail,
-    status: "activo",
-    activityLotSnapshot: {
-      titular: activityLot.recordSnapshot?.titular,
-      manzana: activityLot.recordSnapshot?.manzana,
-      lote: activityLot.recordSnapshot?.lote
-    },
-    updatedAt: new Date().toISOString(),
-    updatedBy: currentUser ? currentUser.username : "sistema"
-  };
+    currentUser
+  });
 
   if (editingMovementId) {
     const movementIndex = finance.activityMovements.findIndex((movement) => movement.id === editingMovementId);
@@ -3455,6 +4159,60 @@ movementForm.addEventListener("submit", (event) => {
       ...finance.activityMovements[movementIndex],
       ...movementPayload
     };
+  } else if (movementType === "aporte_dinero" && amount > computed.remainingAmount) {
+    const baseAmount = Math.max(computed.remainingAmount, 0);
+    const extraAmount = Math.max(amount - baseAmount, 0);
+    const entries = [];
+
+    if (baseAmount > 0) {
+      entries.push({
+        id: generateId(),
+        ...buildMovementPayload({
+          activityLot,
+          type: "aporte_dinero",
+          amount: baseAmount,
+          date: movementDate,
+          method,
+          detail,
+          currentUser
+        }),
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser ? currentUser.username : "sistema"
+      });
+    }
+
+    if (extraAmount > 0) {
+      entries.push({
+        id: generateId(),
+        ...buildMovementPayload({
+          activityLot,
+          type: "aporte_voluntario",
+          amount: extraAmount,
+          date: movementDate,
+          method,
+          detail: detail
+            ? `${detail} | Excedente registrado como aporte voluntario adicional.`
+            : "Excedente registrado como aporte voluntario adicional.",
+          currentUser
+        }),
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser ? currentUser.username : "sistema"
+      });
+    }
+
+    finance.activityMovements = [...entries, ...finance.activityMovements];
+    saveFinanceData(finance);
+    selectedFinanceLotId = activityLotId;
+    refreshAllViews();
+    resetMovementForm(true);
+    setMessage(
+      movementMessage,
+      baseAmount > 0
+        ? `Movimiento registrado. Se guardo ${formatCurrency(baseAmount)} como aporte base y ${formatCurrency(extraAmount)} como aporte voluntario adicional.`
+        : `El lote ya estaba cubierto. Se guardo ${formatCurrency(extraAmount)} como aporte voluntario adicional.`,
+      "success"
+    );
+    return;
   } else {
     finance.activityMovements.unshift({
       id: generateId(),
@@ -3495,18 +4253,22 @@ form.addEventListener("submit", (event) => {
 
   saveRecords(records);
   const finance = getFinanceData();
-  const updatedSnapshot = {
-    titular: `${record.titular.nombres} ${record.titular.apellidos}`,
-    documento: `${record.titular.tipoDocumento} ${record.titular.numeroDocumento}`,
-    manzana: record.ubicacion.manzana,
-    lote: record.ubicacion.lote
-  };
+  const treasury = getTreasuryData();
+  const updatedSnapshot = buildRecordSnapshot(record);
   saveFinanceData({
     ...finance,
     activityLots: finance.activityLots.map((activityLot) => (
       activityLot.recordId === record.id
         ? { ...activityLot, recordSnapshot: updatedSnapshot, updatedAt: new Date().toISOString() }
         : activityLot
+    ))
+  });
+  saveTreasuryData({
+    ...treasury,
+    voluntaryContributions: treasury.voluntaryContributions.map((contribution) => (
+      contribution.recordId === record.id
+        ? { ...contribution, recordSnapshot: updatedSnapshot, updatedAt: new Date().toISOString() }
+        : contribution
     ))
   });
   renderRecords();
@@ -3539,8 +4301,14 @@ resetButton.addEventListener("click", () => {
 
 clearStorageButton.addEventListener("click", async () => {
   const finance = getFinanceData();
-  if (finance.activities.length > 0 || finance.activityLots.length > 0 || finance.activityMovements.length > 0) {
-    setMessage(messageBox, "No puedes limpiar los socios mientras existan actividades comunales registradas.", "error");
+  const treasury = getTreasuryData();
+  if (
+    finance.activities.length > 0
+    || finance.activityLots.length > 0
+    || finance.activityMovements.length > 0
+    || treasury.voluntaryContributions.length > 0
+  ) {
+    setMessage(messageBox, "No puedes limpiar los socios mientras existan registros monetarios asociados.", "error");
     return;
   }
 
@@ -3580,9 +4348,11 @@ recordsList.addEventListener("click", (event) => {
 
   if (button.dataset.action === "delete") {
     const finance = getFinanceData();
+    const treasury = getTreasuryData();
     const hasActivityHistory = finance.activityLots.some((activityLot) => activityLot.recordId === record.id);
-    if (hasActivityHistory) {
-      setMessage(messageBox, "No puedes eliminar este socio porque ya participa en actividades comunales. Elimina primero ese historial.", "error");
+    const hasFundHistory = treasury.voluntaryContributions.some((contribution) => contribution.recordId === record.id);
+    if (hasActivityHistory || hasFundHistory) {
+      setMessage(messageBox, "No puedes eliminar este socio porque ya participa en registros monetarios. Elimina primero ese historial.", "error");
       return;
     }
 
@@ -3712,6 +4482,7 @@ financeSelectedCard.addEventListener("click", (event) => {
 
   if (button.dataset.activityAction === "delete") {
     const finance = getFinanceData();
+    const treasury = getTreasuryData();
     const remainingLots = finance.activityLots.filter((activityLot) => activityLot.activityId !== activity.id);
     const removedLotIds = finance.activityLots.filter((activityLot) => activityLot.activityId === activity.id).map((activityLot) => activityLot.id);
     saveFinanceData({
@@ -3719,6 +4490,10 @@ financeSelectedCard.addEventListener("click", (event) => {
       activities: finance.activities.filter((item) => item.id !== activity.id),
       activityLots: remainingLots,
       activityMovements: finance.activityMovements.filter((movement) => !removedLotIds.includes(movement.activityLotId))
+    });
+    saveTreasuryData({
+      ...treasury,
+      voluntaryAllocations: treasury.voluntaryAllocations.filter((allocation) => allocation.activityId !== activity.id)
     });
     if (selectedFinanceRecordId === activity.id) {
       selectedFinanceRecordId = null;
@@ -3792,7 +4567,7 @@ expenseForm.addEventListener("submit", (event) => {
     date,
     amount,
     category: document.getElementById("expense-category").value,
-    fund: document.getElementById("expense-fund").value,
+    fund: "caja",
     costCenter: document.getElementById("expense-cost-center").value.trim(),
     providerId: expenseProviderSelect.value,
     relatedRecordId: expenseRelatedRecordSelect.value,
@@ -3816,6 +4591,118 @@ expenseForm.addEventListener("submit", (event) => {
 
 expenseCancelButton.addEventListener("click", () => {
   resetExpenseForm();
+});
+
+voluntaryContributionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const record = getRecordById(voluntaryContributionRecordSelect.value);
+  const amount = Number(voluntaryContributionAmountInput.value || 0);
+  const date = voluntaryContributionDateInput.value;
+
+  if (!record) {
+    setMessage(voluntaryContributionMessage, "Debes seleccionar un socio o lote para registrar el aporte.", "error");
+    return;
+  }
+
+  if (!date) {
+    setMessage(voluntaryContributionMessage, "La fecha del aporte es obligatoria.", "error");
+    return;
+  }
+
+  if (amount <= 0) {
+    setMessage(voluntaryContributionMessage, "El aporte voluntario debe ser mayor a cero.", "error");
+    return;
+  }
+
+  const treasury = getTreasuryData();
+  const currentUser = getCurrentUser();
+  const contribution = {
+    id: editingVoluntaryContributionId || generateId(),
+    recordId: record.id,
+    recordSnapshot: buildRecordSnapshot(record),
+    amount,
+    date,
+    method: voluntaryContributionMethodSelect.value,
+    detail: voluntaryContributionDetailInput.value.trim(),
+    updatedAt: new Date().toISOString(),
+    createdBy: currentUser ? currentUser.username : "sistema"
+  };
+  const existingIndex = treasury.voluntaryContributions.findIndex((item) => item.id === contribution.id);
+
+  if (existingIndex >= 0) {
+    treasury.voluntaryContributions[existingIndex] = { ...treasury.voluntaryContributions[existingIndex], ...contribution };
+  } else {
+    treasury.voluntaryContributions.unshift({ ...contribution, createdAt: new Date().toISOString() });
+  }
+
+  saveTreasuryData(treasury);
+  refreshAllViews();
+  resetVoluntaryContributionForm(true);
+  setMessage(voluntaryContributionMessage, existingIndex >= 0 ? "Aporte al fondo actualizado correctamente." : "Aporte al fondo guardado correctamente.", "success");
+});
+
+voluntaryContributionCancelButton.addEventListener("click", () => {
+  resetVoluntaryContributionForm();
+});
+
+voluntaryAllocationForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const type = voluntaryAllocationTypeSelect.value;
+  const amount = Number(voluntaryAllocationAmountInput.value || 0);
+  const date = voluntaryAllocationDateInput.value;
+  const activity = type === "apoyo_actividad" ? getActivityById(voluntaryAllocationActivitySelect.value) : null;
+
+  if (!date) {
+    setMessage(voluntaryAllocationMessage, "La fecha del uso del fondo es obligatoria.", "error");
+    return;
+  }
+
+  if (amount <= 0) {
+    setMessage(voluntaryAllocationMessage, "El monto a usar del fondo debe ser mayor a cero.", "error");
+    return;
+  }
+
+  if (type === "apoyo_actividad" && !activity) {
+    setMessage(voluntaryAllocationMessage, "Debes seleccionar una actividad para registrar el apoyo.", "error");
+    return;
+  }
+
+  const treasury = getTreasuryData();
+  const currentUser = getCurrentUser();
+  const existingAllocation = editingVoluntaryAllocationId ? getVoluntaryAllocationById(editingVoluntaryAllocationId) : null;
+  const availableBalance = getVoluntaryFundSummary().balance + Number(existingAllocation?.amount || 0);
+  if (amount > availableBalance) {
+    setMessage(voluntaryAllocationMessage, `No puedes usar mas de ${formatCurrency(availableBalance)} porque es el saldo disponible del fondo.`, "error");
+    return;
+  }
+
+  const allocation = {
+    id: editingVoluntaryAllocationId || generateId(),
+    type,
+    activityId: activity ? activity.id : "",
+    activitySnapshot: activity ? { title: activity.title, date: activity.date } : null,
+    amount,
+    date,
+    detail: voluntaryAllocationDetailInput.value.trim(),
+    updatedAt: new Date().toISOString(),
+    createdBy: currentUser ? currentUser.username : "sistema"
+  };
+  const existingIndex = treasury.voluntaryAllocations.findIndex((item) => item.id === allocation.id);
+
+  if (existingIndex >= 0) {
+    treasury.voluntaryAllocations[existingIndex] = { ...treasury.voluntaryAllocations[existingIndex], ...allocation };
+  } else {
+    treasury.voluntaryAllocations.unshift({ ...allocation, createdAt: new Date().toISOString() });
+  }
+
+  saveTreasuryData(treasury);
+  refreshAllViews();
+  resetVoluntaryAllocationForm(true);
+  setMessage(voluntaryAllocationMessage, existingIndex >= 0 ? "Uso del fondo actualizado correctamente." : "Uso del fondo guardado correctamente.", "success");
+});
+
+voluntaryAllocationCancelButton.addEventListener("click", () => {
+  resetVoluntaryAllocationForm();
 });
 
 incidentForm.addEventListener("submit", (event) => {
@@ -4080,6 +4967,58 @@ expensesList.addEventListener("click", (event) => {
   setMessage(expenseMessage, "Egreso eliminado.", "success");
 });
 
+voluntaryContributionsList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-voluntary-contribution-action]");
+  if (!button) {
+    return;
+  }
+
+  const treasury = getTreasuryData();
+  const contribution = treasury.voluntaryContributions.find((item) => item.id === button.dataset.id);
+  if (!contribution) {
+    return;
+  }
+
+  if (button.dataset.voluntaryContributionAction === "edit") {
+    fillVoluntaryContributionForm(contribution);
+    setActiveTab("tesoreria");
+    return;
+  }
+
+  saveTreasuryData({
+    ...treasury,
+    voluntaryContributions: treasury.voluntaryContributions.filter((item) => item.id !== contribution.id)
+  });
+  refreshAllViews();
+  setMessage(voluntaryContributionMessage, "Aporte al fondo eliminado.", "success");
+});
+
+voluntaryAllocationsList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-voluntary-allocation-action]");
+  if (!button) {
+    return;
+  }
+
+  const treasury = getTreasuryData();
+  const allocation = treasury.voluntaryAllocations.find((item) => item.id === button.dataset.id);
+  if (!allocation) {
+    return;
+  }
+
+  if (button.dataset.voluntaryAllocationAction === "edit") {
+    fillVoluntaryAllocationForm(allocation);
+    setActiveTab("tesoreria");
+    return;
+  }
+
+  saveTreasuryData({
+    ...treasury,
+    voluntaryAllocations: treasury.voluntaryAllocations.filter((item) => item.id !== allocation.id)
+  });
+  refreshAllViews();
+  setMessage(voluntaryAllocationMessage, "Uso del fondo eliminado.", "success");
+});
+
 incidentsList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-incident-action]");
   if (!button) {
@@ -4229,18 +5168,25 @@ exportFinanceButton.addEventListener("click", () => {
   const rows = getFinanceData().activityLots.map((activityLot) => {
     const activity = getActivityById(activityLot.activityId);
     const computed = getActivityLotComputedState(activityLot);
+    const activitySummary = activity ? getActivityComputedSummary(activity) : null;
     return {
-      actividad: activity?.title || "",
+      registro: activity?.title || "",
+      tipo_registro: getActivityKindLabel(getActivityKind(activity)),
       fecha: activity?.date || "",
       manzana: activityLot.recordSnapshot?.manzana || "",
       lote: activityLot.recordSnapshot?.lote || "",
       titular: activityLot.recordSnapshot?.titular || "",
-      aporte_sugerido: Number(activityLot.suggestedAmount || 0).toFixed(2),
+      referencia_por_lote: Number(activityLot.suggestedAmount || 0).toFixed(2),
       dinero_recibido: computed.moneyAmount.toFixed(2),
+      aporte_voluntario_adicional: computed.voluntaryAmount.toFixed(2),
       dinero_devuelto: computed.returnedAmount.toFixed(2),
       ayuda_fisica: computed.hasPhysicalSupport ? "Si" : "No",
       compensacion_aprobada: computed.approvedCompensation.toFixed(2),
       sin_respuesta: computed.noResponseMarked ? "Si" : "No",
+      apoyo_desde_fondo: Number(activitySummary?.fundSupportAmount || 0).toFixed(2),
+      excedente_al_fondo: Number(activitySummary?.surplusAmount || 0).toFixed(2),
+      deuda_formal: computed.debtAmount.toFixed(2),
+      por_coordinar: computed.coordinationAmount.toFixed(2),
       saldo_pendiente: computed.remainingAmount.toFixed(2),
       estado: humanizeValue(computed.status)
     };
@@ -4254,7 +5200,7 @@ exportExpensesButton.addEventListener("click", () => {
     fecha: expense.date,
     categoria: humanizeValue(expense.category),
     detalle: expense.detail || "",
-    fondo: humanizeValue(expense.fund),
+    fondo: getExpenseFundLabel(expense.fund),
     monto: Number(expense.amount || 0).toFixed(2),
     centro_costo: expense.costCenter || ""
   }));
@@ -4269,6 +5215,10 @@ exportExpensesButton.addEventListener("click", () => {
 
 movementTypeSelect.addEventListener("change", () => {
   syncMovementFormWithSelectedLot();
+});
+
+activityKindInput.addEventListener("change", () => {
+  updateSuggestedPerLotField();
 });
 
 activityTargetInput.addEventListener("input", () => {
@@ -4304,7 +5254,7 @@ portalLookupForm.addEventListener("submit", (event) => {
   const records = getPortalLookupRecords();
   if (records.length === 0) {
     setMessage(portalLookupMessage, "No se encontraron lotes con esos datos.", "error");
-    renderPortalAccountResult();
+    renderPortalAccountResult(records);
     return;
   }
 
@@ -4315,7 +5265,7 @@ portalLookupForm.addEventListener("submit", (event) => {
       : `Consulta encontrada. Mostrando ${records.length} lotes asociados al documento.`,
     "success"
   );
-  renderPortalAccountResult();
+  renderPortalAccountResult(records);
 });
 
 portalClearButton.addEventListener("click", () => {
@@ -4325,6 +5275,15 @@ portalClearButton.addEventListener("click", () => {
 movementLotSelect.addEventListener("change", () => {
   selectedFinanceLotId = movementLotSelect.value || null;
   syncMovementFormWithSelectedLot();
+});
+
+movementLotSearchInput.addEventListener("input", () => {
+  renderPaymentChargeOptions(selectedFinanceLotId || movementLotSelect.value || "");
+  syncMovementFormWithSelectedLot();
+});
+
+voluntaryAllocationTypeSelect.addEventListener("change", () => {
+  syncVoluntaryAllocationType();
 });
 
 activityLotFilterSelect.addEventListener("input", () => {
@@ -4353,6 +5312,8 @@ async function bootstrapApp() {
   resetMovementForm();
   resetProviderForm();
   resetExpenseForm();
+  resetVoluntaryContributionForm();
+  resetVoluntaryAllocationForm();
   resetIncidentForm();
   resetWorkOrderForm();
   resetAssemblyForm();

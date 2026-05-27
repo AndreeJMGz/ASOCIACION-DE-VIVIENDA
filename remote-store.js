@@ -43,7 +43,9 @@
       },
       treasury: {
         providers: [],
-        expenses: []
+        expenses: [],
+        voluntaryContributions: [],
+        voluntaryAllocations: []
       },
       incidents: {
         incidents: [],
@@ -62,7 +64,11 @@
     return {
       records: [],
       finance: state.finance,
-      treasury: { expenses: [] },
+      treasury: {
+        expenses: [],
+        voluntaryContributions: [],
+        voluntaryAllocations: []
+      },
       governance: state.governance
     };
   }
@@ -80,7 +86,9 @@
   function normalizeTreasuryData(raw) {
     return {
       providers: Array.isArray(raw?.providers) ? cloneJson(raw.providers, []) : [],
-      expenses: Array.isArray(raw?.expenses) ? cloneJson(raw.expenses, []) : []
+      expenses: Array.isArray(raw?.expenses) ? cloneJson(raw.expenses, []) : [],
+      voluntaryContributions: Array.isArray(raw?.voluntaryContributions) ? cloneJson(raw.voluntaryContributions, []) : [],
+      voluntaryAllocations: Array.isArray(raw?.voluntaryAllocations) ? cloneJson(raw.voluntaryAllocations, []) : []
     };
   }
 
@@ -113,9 +121,7 @@
     return {
       records: Array.isArray(raw?.records) ? cloneJson(raw.records, []) : [],
       finance: normalizeFinanceData(raw?.finance),
-      treasury: {
-        expenses: Array.isArray(raw?.treasury?.expenses) ? cloneJson(raw.treasury.expenses, []) : []
-      },
+      treasury: normalizeTreasuryData(raw?.treasury),
       governance: normalizeGovernanceData(raw?.governance)
     };
   }
@@ -159,9 +165,7 @@
         }
       })),
       finance: normalizeFinanceData(state?.finance),
-      treasury: {
-        expenses: Array.isArray(state?.treasury?.expenses) ? cloneJson(state.treasury.expenses, []) : []
-      },
+      treasury: normalizeTreasuryData(state?.treasury),
       governance: normalizeGovernanceData(state?.governance)
     };
   }
@@ -514,9 +518,7 @@
   }
 
   function getPortalTreasuryData() {
-    return {
-      expenses: Array.isArray(portalState?.treasury?.expenses) ? cloneJson(portalState.treasury.expenses, []) : []
-    };
+    return normalizeTreasuryData(portalState?.treasury);
   }
 
   function getPortalGovernanceData() {

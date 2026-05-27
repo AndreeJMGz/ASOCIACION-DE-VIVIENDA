@@ -19,7 +19,12 @@ Este workspace ya tiene una base editable del sistema:
 - Tiene un `portal de consulta` en solo lectura para transparencia general y estado de cuenta por lote
 - El `super admin` puede crear, editar y eliminar cuentas directivas
 - Permite registrar socios con `manzana`, `lote`, `cotitulares`, `contacto` y `observaciones`
-- Incluye modulo de `actividades comunales` con `meta`, `aporte sugerido por lote`, `apoyo fisico`, `compensacion por junta`, `devoluciones` y `pendientes`
+- Incluye modulo mixto de `actividades comunales` y `cuotas formales`
+- Las `cuotas formales` si generan `deuda acumulable`
+- Las `actividades comunales` no generan deuda automatica; dejan `seguimiento`, `por coordinar` y `reincidencia`
+- Cada `actividad comunal` usa un `monto sugerido manual por lote`
+- Si una actividad recauda mas de lo necesario, el `excedente` pasa automaticamente al `fondo comun`
+- Incluye un `fondo comun` central para aportes generales, emergencias y apoyo a actividades
 - Incluye modulo de `tesoreria`, `egresos` y `proveedores`
 - Incluye modulo de `incidencias` y `ordenes de trabajo`
 - Incluye modulo de `asambleas`, `acuerdos`, `documentos` y `reportes`
@@ -144,16 +149,21 @@ La persistencia principal ahora vive en `data/santa-luzmila.db`, dentro del mism
 
 El flujo monetario principal ya no gira alrededor de `cobros manuales` aislados. Ahora la operacion pensada para la asociacion es:
 
-1. crear una `actividad comunal`;
+1. crear una `actividad comunal` o una `cuota formal`;
 2. generar su control `por lote`;
-3. registrar si cada lote `aporto dinero`, `ayudo fisicamente`, quedo `sin respuesta` o si la junta aprobo `compensacion` o `exoneracion`;
-4. si hubo error o devolucion real, la tesorera puede `editar`, `anular` o registrar una `devolucion` sin borrar el historial;
-5. revisar en reportes cuanto falta para la meta y cuantos lotes siguen pendientes.
+3. definir un `monto sugerido manual por lote` para cada actividad;
+4. registrar si cada lote `aporto dinero`, `ayudo fisicamente`, quedo `sin respuesta` o si la junta aprobo `compensacion` o `exoneracion`;
+5. si una actividad recauda mas de lo necesario, el `excedente` pasa automaticamente al `fondo comun`;
+6. registrar `aportes voluntarios generales` ligados a socio/lote dentro de una caja separada;
+7. usar el `fondo comun` para gastos imprevistos o para apoyar actividades sin cambiar la deuda individual por lote;
+8. en `cuotas formales`, el saldo pendiente si cuenta como `deuda`;
+9. en `actividades comunales`, el saldo solo queda como `por coordinar` y puede generar `reincidencia`, pero no deuda infinita automatica;
+10. si hubo error o devolucion real, la tesorera puede `editar`, `anular` o registrar una `devolucion` sin borrar el historial.
 
 El prototipo tambien incluye un `portal de consulta`:
 
-- `Transparencia general`: muestra actividades comunales, metas, recaudacion, faltantes, egresos y actividad reciente en modo solo lectura.
-- `Mi estado de cuenta`: consulta privada por `documento`, con filtros opcionales de `manzana` y `lote`, para revisar todos los lotes asociados, aportes, devoluciones y saldos pendientes.
+- `Transparencia general`: muestra actividades, cuotas, deuda formal, egresos, fondo comun y actividad reciente en modo solo lectura.
+- `Mi estado de cuenta`: consulta privada por `documento`, con filtros opcionales de `manzana` y `lote`, para revisar todos los lotes asociados, aportes, devoluciones, deuda formal, actividades por coordinar y aportes al fondo comun.
 
 ## Siguiente paso sugerido
 

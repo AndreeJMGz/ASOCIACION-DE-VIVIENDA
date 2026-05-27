@@ -191,7 +191,7 @@
         </div>
         <div class="tabs-nav" role="tablist" aria-label="Secciones principales">
           <button id="tab-button-registro" class="tab-button active" type="button" data-tab="registro" aria-selected="true">Registro</button>
-          <button id="tab-button-finanzas" class="tab-button" type="button" data-tab="finanzas" aria-selected="false">Actividades y aportes</button>
+          <button id="tab-button-finanzas" class="tab-button" type="button" data-tab="finanzas" aria-selected="false">Actividades, cuotas y aportes</button>
           <button id="tab-button-tesoreria" class="tab-button" type="button" data-tab="tesoreria" aria-selected="false">Tesoreria</button>
           <button id="tab-button-incidencias" class="tab-button" type="button" data-tab="incidencias" aria-selected="false">Incidencias</button>
           <button id="tab-button-asambleas" class="tab-button" type="button" data-tab="asambleas" aria-selected="false">Asambleas</button>
@@ -364,8 +364,8 @@
         <section id="finanzas-section" class="panel saved-panel">
         <div class="panel-header">
           <div>
-            <h2>Actividades y aportes</h2>
-            <p>Crea una actividad comunal, define una meta y controla por lote quien aporto, quien ayudo fisicamente y que decidio la junta.</p>
+            <h2>Actividades, cuotas y aportes</h2>
+            <p>Registra actividades comunales o cuotas formales, define la referencia por lote y controla quien aporto, quien compenso y que decidio la junta.</p>
           </div>
         </div>
 
@@ -373,8 +373,8 @@
           <aside class="panel inner-panel finance-sidebar">
             <div class="panel-header">
               <div>
-                <h3>Buscar actividad</h3>
-                <p>Escribe el nombre, motivo o fecha de la actividad.</p>
+                <h3>Buscar registro monetario</h3>
+                <p>Escribe el nombre, motivo o fecha de la actividad o cuota.</p>
               </div>
             </div>
             <label>
@@ -402,14 +402,21 @@
             <div class="finance-grid">
               <form id="activity-form" class="panel inner-panel form-stack">
                 <div>
-                  <h3 id="activity-form-title">Nueva actividad comunal</h3>
-                  <p class="section-copy">Ejemplo: limpieza de calles, alquiler de maquinaria, guardiania o mantenimiento puntual.</p>
+                  <h3 id="activity-form-title">Nuevo registro monetario</h3>
+                  <p class="section-copy">Puedes registrar una actividad comunal o una cuota formal aprobada por la junta o asamblea.</p>
                 </div>
 
                 <div class="grid two-columns">
+                  <label>
+                    <span>Tipo de registro</span>
+                    <select id="activity-kind">
+                      <option value="actividad_comunal">Actividad comunal (no genera deuda automatica)</option>
+                      <option value="cuota_formal">Cuota formal (si genera deuda acumulable)</option>
+                    </select>
+                  </label>
                   <label class="full-width">
-                    <span>Nombre de la actividad</span>
-                    <input id="activity-title" type="text" placeholder="Ej. Limpieza de calles con maquinaria" required>
+                    <span>Nombre del registro</span>
+                    <input id="activity-title" type="text" placeholder="Ej. Limpieza de calles con maquinaria o cuota extraordinaria de seguridad" required>
                   </label>
                   <label class="full-width">
                     <span>Motivo o detalle</span>
@@ -424,9 +431,9 @@
                     <input id="activity-target" type="number" min="0" step="0.01" required>
                   </label>
                   <label>
-                    <span>Aporte sugerido por lote (S/.)</span>
-                    <input id="activity-suggested" type="number" min="0" step="0.01" readonly>
-                    <small id="activity-suggested-help" class="field-help">Se calcula automaticamente segun la meta y los lotes activos.</small>
+                    <span>Monto sugerido por lote (S/.)</span>
+                    <input id="activity-suggested" type="number" min="0" step="0.01" required>
+                    <small id="activity-suggested-help" class="field-help">La junta define este monto manualmente. El sistema puede mostrar una referencia automatica aparte.</small>
                   </label>
                   <label>
                     <span>Estado</span>
@@ -442,7 +449,7 @@
 
                 <div class="form-actions compact-actions">
                   <button id="activity-cancel" class="ghost-button" type="button">Limpiar</button>
-                  <button class="primary-button" type="submit">Guardar actividad</button>
+                  <button class="primary-button" type="submit">Guardar registro</button>
                 </div>
               </form>
 
@@ -455,12 +462,15 @@
                 <div class="grid two-columns">
                   <label class="full-width">
                     <span>Lote / responsable</span>
+                    <input id="movement-lot-search" type="text" placeholder="Busca por nombre, DNI, celular, manzana o lote">
+                    <small id="movement-lot-search-help" class="field-help">Primero selecciona una actividad o cuota para buscar entre sus lotes.</small>
                     <select id="movement-lot" required></select>
                   </label>
                   <label>
                     <span>Tipo de movimiento</span>
                     <select id="movement-type" required>
                       <option value="aporte_dinero">Aporto dinero</option>
+                      <option value="aporte_voluntario">Aporte voluntario adicional</option>
                       <option value="devolucion">Devolucion de aporte</option>
                       <option value="apoyo_fisico">Ayudo fisicamente</option>
                       <option value="compensacion_aprobada">La junta aprobo compensacion</option>
@@ -509,7 +519,7 @@
               <div class="panel-header">
                 <div>
                   <h3>Control por lotes</h3>
-                  <p>Revisa por lote quien aporto, quien ayudo y quien sigue pendiente.</p>
+                  <p>Revisa por lote quien aporto, quien mantiene deuda formal y quien sigue pendiente de coordinar en actividades.</p>
                 </div>
                 <label class="compact-filter">
                   <span>Filtro</span>
@@ -538,7 +548,7 @@
           <div class="panel-header">
             <div>
               <h2>Tesoreria, gastos y proveedores</h2>
-              <p>Registra egresos, controla caja y banco, y manten ordenados tus proveedores.</p>
+              <p>Registra egresos desde caja chica y manten ordenados tus proveedores.</p>
             </div>
           </div>
 
@@ -589,7 +599,7 @@
             <form id="expense-form" class="panel inner-panel form-stack">
               <div>
                 <h3>Registrar egreso</h3>
-                <p class="section-copy">Anota pagos de caja o banco con categoria, detalle y proveedor.</p>
+                <p class="section-copy">Anota pagos de caja chica con categoria, detalle y proveedor.</p>
               </div>
               <div class="grid two-columns">
                 <label>
@@ -614,10 +624,8 @@
                 </label>
                 <label>
                   <span>Fondo</span>
-                  <select id="expense-fund" required>
-                    <option value="caja">Caja</option>
-                    <option value="banco">Banco</option>
-                  </select>
+                  <input type="text" value="Caja chica" readonly>
+                  <input id="expense-fund" type="hidden" value="caja">
                 </label>
                 <label>
                   <span>Centro de costo</span>
@@ -643,6 +651,107 @@
               </div>
             </form>
           </div>
+
+          <section class="panel inner-panel form-stack">
+            <div>
+              <h3>Fondo comun de apoyo y emergencias</h3>
+              <p class="section-copy">Registra aportes voluntarios generales por lote y usa ese fondo central para emergencias o para apoyar actividades cuando haga falta.</p>
+            </div>
+
+            <div id="voluntary-fund-dashboard" class="finance-dashboard"></div>
+
+            <div class="module-grid">
+              <form id="voluntary-contribution-form" class="panel inner-panel form-stack">
+                <div>
+                  <h4 id="voluntary-contribution-form-title">Registrar aporte al fondo comun</h4>
+                  <p class="section-copy">Este aporte no pertenece a una actividad concreta. Se guarda en el fondo comun central para apoyo y emergencias.</p>
+                </div>
+                <div class="grid two-columns">
+                  <label class="full-width">
+                    <span>Socio / lote aportante</span>
+                    <select id="voluntary-contribution-record" required></select>
+                  </label>
+                  <label>
+                    <span>Fecha</span>
+                    <input id="voluntary-contribution-date" type="date" required>
+                  </label>
+                  <label>
+                    <span>Monto (S/.)</span>
+                    <input id="voluntary-contribution-amount" type="number" min="0" step="0.01" required>
+                  </label>
+                  <label>
+                    <span>Medio o respaldo</span>
+                    <select id="voluntary-contribution-method">
+                      <option value="efectivo">Efectivo</option>
+                      <option value="transferencia">Transferencia</option>
+                      <option value="deposito">Deposito</option>
+                      <option value="yape_plin">Yape / Plin</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </label>
+                  <label class="full-width">
+                    <span>Detalle</span>
+                    <input id="voluntary-contribution-detail" type="text" placeholder="Ej. aporte solidario para fondo comun">
+                  </label>
+                </div>
+                <div id="voluntary-contribution-message" class="form-message hidden" role="status"></div>
+                <div class="form-actions compact-actions">
+                  <button id="voluntary-contribution-cancel" class="ghost-button" type="button">Limpiar</button>
+                  <button class="primary-button" type="submit">Guardar aporte</button>
+                </div>
+              </form>
+
+              <form id="voluntary-allocation-form" class="panel inner-panel form-stack">
+                <div>
+                  <h4 id="voluntary-allocation-form-title">Usar fondo comun</h4>
+                  <p class="section-copy">Usa el fondo comun para una emergencia general o para apoyar una actividad sin tocar la deuda individual de los lotes.</p>
+                </div>
+                <div class="grid two-columns">
+                  <label>
+                    <span>Tipo de uso</span>
+                    <select id="voluntary-allocation-type" required>
+                      <option value="emergencia">Emergencia / gasto general</option>
+                      <option value="apoyo_actividad">Apoyo a actividad</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Fecha</span>
+                    <input id="voluntary-allocation-date" type="date" required>
+                  </label>
+                  <label class="full-width">
+                    <span>Actividad relacionada</span>
+                    <select id="voluntary-allocation-activity" disabled></select>
+                  </label>
+                  <label>
+                    <span>Monto (S/.)</span>
+                    <input id="voluntary-allocation-amount" type="number" min="0" step="0.01" required>
+                  </label>
+                  <label class="full-width">
+                    <span>Detalle</span>
+                    <input id="voluntary-allocation-detail" type="text" placeholder="Ej. apoyo para maquinaria, emergencia por tuberia, etc.">
+                  </label>
+                </div>
+                <div id="voluntary-allocation-message" class="form-message hidden" role="status"></div>
+                <div class="form-actions compact-actions">
+                  <button id="voluntary-allocation-cancel" class="ghost-button" type="button">Limpiar</button>
+                  <button class="primary-button" type="submit">Guardar uso del fondo</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="module-grid">
+              <section class="panel inner-panel">
+                <h4>Aportes al fondo comun</h4>
+                <div id="voluntary-contributions-empty" class="empty-state">Aun no hay aportes registrados en el fondo comun.</div>
+                <div id="voluntary-contributions-list" class="records-list"></div>
+              </section>
+              <section class="panel inner-panel">
+                <h4>Usos del fondo comun</h4>
+                <div id="voluntary-allocations-empty" class="empty-state">Aun no hay usos registrados para el fondo comun.</div>
+                <div id="voluntary-allocations-list" class="records-list"></div>
+              </section>
+            </div>
+          </section>
 
           <div class="module-grid">
             <section class="panel inner-panel">
@@ -1154,6 +1263,15 @@
       </div>
     </article>
   </template>
+
+  <footer class="global-contact-bar" aria-label="Contacto permanente">
+    <div class="global-contact-content">
+      <strong>Contacto</strong>
+      <a href="mailto:AndreeJMGz@gmail.com">AndreeJMGz@gmail.com</a>
+      <span class="contact-separator">|</span>
+      <a href="https://wa.me/51953482924" target="_blank" rel="noopener noreferrer">WhatsApp: +51 953482924</a>
+    </div>
+  </footer>
 
   <script src="remote-store.js"></script>
   <script src="app.js"></script>
