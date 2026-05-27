@@ -5,7 +5,8 @@
   "description": "Sistema administrativo para la Asociacion Santa Luzmila con Node y SQLite.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "update:safe": "bash ./actualizar-seguro.sh"
   },
   "engines": {
     "node": ">=22.0.0"
